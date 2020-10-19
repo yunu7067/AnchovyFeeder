@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
                     public  void execute(Realm realm) {
                         MemoVO vo = realm.createObject(MemoVO.class);
                         vo.title = "test";
-                        vo.content = "dkdkdkdkdkdkdkdkdkdkdkdkdk";
+                        vo.content = "아아";
 
                     }
                 }

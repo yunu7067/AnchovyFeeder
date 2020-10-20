@@ -3,59 +3,89 @@ package com.example.anchovyfeeder;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 
+import com.opencsv.CSVReader;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
+import io.realm.DynamicRealm;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+import io.realm.RealmMigration;
+import io.realm.RealmObject;
+import io.realm.RealmObjectSchema;
+import io.realm.RealmSchema;
 import io.realm.annotations.RealmModule;
 
 public class MainActivity extends AppCompatActivity {
-    @RealmModule(classes={FoodObject.class})
+    @RealmModule(classes = {FoodObject.class})
     public class BundledRealmModule {
 
     }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         Realm.init(this);
 
-        RealmConfiguration config = new RealmConfiguration.Builder()
-                .assetFile("foodinfos.realm")
-                .readOnly()
-                .modules(new BundledRealmModule())
-                .build();
+        test();
+    }
 
-        Realm mRealm = Realm.getInstance(config);
+    public void test() {
 
-
-        /*
-        Realm.init(this);
         Realm mRealm = Realm.getDefaultInstance();
         mRealm.executeTransaction(
                 new Realm.Transaction() {
                     @Override
-                    public  void execute(Realm realm) {
-                        MemoVO vo = realm.createObject(MemoVO.class);
-                        vo.title = "test";
-                        vo.content = "123";
+                    public void execute(Realm realm) {
+                        int count = 0;
+                        try {
+                            InputStreamReader is = new InputStreamReader(getResources().openRawResource(R.raw.list1));
+                            BufferedReader reader = new BufferedReader(is);
+                            CSVReader read = new CSVReader(reader);
+                            String[] record = null;
+                            while ((record = read.readNext()) != null) {
+                                if(count == 0) continue;
 
+
+                                Log.d("ERROR:: ", record[0]);
+
+
+                                //Log.d("RECORD:::::: ", record[0]);
+                                FoodObject fo = realm.createObject(FoodObject.class);
+                                fo.setNO(Long.valueOf(record[0]));
+                                fo.setFOOD_NAME(record[1]);
+                                fo.setFOOD_TYPE(record[2]);
+                                fo.setAMOUNT_PER_SERVINGS(Long.valueOf(record[3]));
+                                fo.setUNIT(record[4]);
+                                fo.setKCAL(Double.valueOf(record[5]));
+                                fo.setPROTEIN(Double.valueOf(record[6]));
+                                fo.setFAT(Double.valueOf(record[7]));
+                                fo.setCARBOHYDRATE(Double.valueOf(record[7]));
+                                mRealm.insert(fo);
+                                count++;
+                            }
+                        } catch (Exception e) {
+                            Log.d("ERROR:: ", count + ":" + e.getMessage());
+                        }
                     }
                 }
         );
-        */
-        //Realm mRealm2 = Realm.getDefaultInstance();
+
+
         TextView tv = (TextView) findViewById(R.id.textarea);
         tv.append("Realm 테스트\n");
-
-        FoodObject vo2 = mRealm.where(FoodObject.class).equalTo("FOOD_NAME", "훈제오리").findFirst();
-        //vo2.deleteFromRealm();
-        tv.append("title : " + vo2.getFOOD_NAME() + "\ncontent : " + vo2.getKCAL());
-
-
+        FoodObject fo = mRealm.where(FoodObject.class).equalTo("NO", 3).findFirst();
+        if(fo != null) {
+            //vo2.deleteFromRealm();
+            tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
+        } else {
+            tv.append("NULL");
+        }
 
     }
 }

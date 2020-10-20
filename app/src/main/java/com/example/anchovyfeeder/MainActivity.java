@@ -10,6 +10,9 @@ import com.opencsv.CSVReader;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import io.realm.DynamicRealm;
 import io.realm.Realm;
@@ -33,7 +36,8 @@ public class MainActivity extends AppCompatActivity {
         Realm.init(this);
 
         //ConvertCSVtoRealm();
-        RoadRealmAndView();
+        LoadRealmAndView();
+        //CreateOrLoadAlarmListByRealm();
     }
 
     public void ConvertCSVtoRealm() {
@@ -49,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
                             CSVReader read = new CSVReader(reader);
                             String[] record = null;
                             while ((record = read.readNext()) != null) {
-                                if(count++ == 0) continue;
+                                if (count++ == 0) continue;
                                 //Log.d("RECORD:::::: ", record[0]);
                                 FoodObject fo = realm.createObject(FoodObject.class);
                                 fo.setNO(Long.valueOf(record[0]));
@@ -75,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = (TextView) findViewById(R.id.textarea);
         tv.append("Realm 테스트\n");
         FoodObject fo = mRealm.where(FoodObject.class).equalTo("NO", 3).findFirst();
-        if(fo != null) {
+        if (fo != null) {
             //vo2.deleteFromRealm();
             tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
         } else {
@@ -84,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void RoadRealmAndView() {
+    public void LoadRealmAndView() {
         RealmConfiguration config = new RealmConfiguration.Builder()
                 .assetFile("default.realm")
                 .readOnly()
@@ -96,11 +100,36 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = (TextView) findViewById(R.id.textarea);
         tv.append("Realm 테스트\n");
         FoodObject fo = mRealm.where(FoodObject.class).contains("FOOD_NAME", "홍차").findFirst();
-        if(fo != null) {
+        if (fo != null) {
             //vo2.deleteFromRealm();
             tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
         } else {
             tv.append("NULL");
         }
+    }
+
+    public void CreateOrLoadAlarmListByRealm() {
+        Realm mRealm;
+        RealmConfiguration config = new RealmConfiguration.Builder()
+                .name("userdatas.realm")
+                .modules(new BundledRealmModule())
+                .build();
+
+        mRealm = Realm.getInstance(config);
+
+        mRealm.executeTransaction(
+                new Realm.Transaction() {
+                    @Override
+                    public void execute(Realm realm) {
+                        AlarmObject ao = realm.createObject(AlarmObject.class);
+                        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+                        //ao.setALARM_TIME();
+                        ao.setALARM_TITLE("아침");
+                        ao.setIS_USING(true);
+                        mRealm.insert(ao);
+                    }
+                }
+        );
     }
 }

@@ -5,7 +5,6 @@ import androidx.annotation.Nullable;
 import io.realm.RealmObject;
 
 public class FoodObject extends RealmObject {
-
     private long NO;
     private String FOOD_NAME;
     private String FOOD_TYPE;

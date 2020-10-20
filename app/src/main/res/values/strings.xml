@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">삼시세끼알리미</string>
+    <string name="CardHeaderAdd">알람을 추가합니다.</string>
+    <string name="header">알람 시간 목록</string>
 </resources>

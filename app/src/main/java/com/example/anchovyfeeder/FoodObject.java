@@ -9,7 +9,7 @@ public class FoodObject extends RealmObject {
     private long NO;
     private String FOOD_NAME;
     private String FOOD_TYPE;
-    private long AMOUNT_PER_SERVINGS;
+    private Double AMOUNT_PER_SERVINGS;
     private String UNIT;
     private Double KCAL;
     private Double PROTEIN;
@@ -40,11 +40,11 @@ public class FoodObject extends RealmObject {
         this.FOOD_TYPE = FOOD_TYPE;
     }
 
-    public long getAMOUNT_PER_SERVINGS() {
+    public Double getAMOUNT_PER_SERVINGS() {
         return AMOUNT_PER_SERVINGS;
     }
 
-    public void setAMOUNT_PER_SERVINGS(long AMOUNT_PER_SERVINGS) {
+    public void setAMOUNT_PER_SERVINGS(Double AMOUNT_PER_SERVINGS) {
         this.AMOUNT_PER_SERVINGS = AMOUNT_PER_SERVINGS;
     }
 

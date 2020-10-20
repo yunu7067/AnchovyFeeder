@@ -32,11 +32,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Realm.init(this);
 
-        test();
+        //ConvertCSVtoRealm();
+        RoadRealmAndView();
     }
 
-    public void test() {
-
+    public void ConvertCSVtoRealm() {
         Realm mRealm = Realm.getDefaultInstance();
         mRealm.executeTransaction(
                 new Realm.Transaction() {
@@ -49,18 +49,13 @@ public class MainActivity extends AppCompatActivity {
                             CSVReader read = new CSVReader(reader);
                             String[] record = null;
                             while ((record = read.readNext()) != null) {
-                                if(count == 0) continue;
-
-
-                                Log.d("ERROR:: ", record[0]);
-
-
+                                if(count++ == 0) continue;
                                 //Log.d("RECORD:::::: ", record[0]);
                                 FoodObject fo = realm.createObject(FoodObject.class);
                                 fo.setNO(Long.valueOf(record[0]));
                                 fo.setFOOD_NAME(record[1]);
                                 fo.setFOOD_TYPE(record[2]);
-                                fo.setAMOUNT_PER_SERVINGS(Long.valueOf(record[3]));
+                                fo.setAMOUNT_PER_SERVINGS(Double.valueOf(record[3]));
                                 fo.setUNIT(record[4]);
                                 fo.setKCAL(Double.valueOf(record[5]));
                                 fo.setPROTEIN(Double.valueOf(record[6]));
@@ -87,5 +82,25 @@ public class MainActivity extends AppCompatActivity {
             tv.append("NULL");
         }
 
+    }
+
+    public void RoadRealmAndView() {
+        RealmConfiguration config = new RealmConfiguration.Builder()
+                .assetFile("default.realm")
+                .readOnly()
+                .modules(new BundledRealmModule())
+                .build();
+
+        Realm mRealm = Realm.getInstance(config);
+
+        TextView tv = (TextView) findViewById(R.id.textarea);
+        tv.append("Realm 테스트\n");
+        FoodObject fo = mRealm.where(FoodObject.class).contains("FOOD_NAME", "홍차").findFirst();
+        if(fo != null) {
+            //vo2.deleteFromRealm();
+            tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
+        } else {
+            tv.append("NULL");
+        }
     }
 }

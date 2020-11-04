@@ -14,9 +14,10 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
             <LinearLayout
                 android:id="@+id/CardHeader"
@@ -49,15 +50,14 @@
                     android:src="@drawable/ic_baseline_add_alarm_24" />
             </LinearLayout>
 
-            <ListView
+            <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/AlarmList"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="3dp"
-                android:layout_below="@id/CardHeader">
+                android:layout_height="250dp"
+                android:layout_weight="1"
+                android:padding="3dp" />
+        </LinearLayout>
 
-            </ListView>
-        </RelativeLayout>
     </androidx.cardview.widget.CardView>
 
     <TextView
@@ -65,7 +65,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="5dp"
-        app:layout_constraintTop_toBottomOf="@+id/CardView"/>
+        app:layout_constraintTop_toBottomOf="@+id/CardView" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

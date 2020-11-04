@@ -1,9 +1,13 @@
 package com.example.anchovyfeeder;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -14,6 +18,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import io.realm.DynamicRealm;
@@ -137,11 +142,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void AttachMainActivityItems() {
-        final String[] listViewitems = { "호랑이", "토끼", "곰"};
+        final String[] listViewitems = {"호랑이", "토끼", "곰", "돌고래", "고양이", "삵", "뱀", "원숭이", "쥐"};
+        final ArrayList<AlarmListItem> list = new ArrayList<AlarmListItem>();
+        for (String item : listViewitems) {
+            AlarmListItem listitem = new AlarmListItem();
+            listitem.setName(item);
+            listitem.setTime(12, 12, 00);
+            listitem.setUse(true);
 
-        ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, listViewitems) ;
+            list.add(listitem);
+        }
 
-        ListView listview = (ListView) findViewById(R.id.AlarmList) ;
-        listview.setAdapter(adapter) ;
+        RecyclerView AlarmList = (RecyclerView) findViewById(R.id.AlarmList);
+
+        // 리사이클러뷰에 SimpleTextAdapter 객체 지정.
+        AlarmListAdaper adapter = new AlarmListAdaper(list);
+        AlarmList.setAdapter(adapter);
+        // 구분선
+        AlarmList.addItemDecoration(new DividerItemDecoration(getApplicationContext(), DividerItemDecoration.VERTICAL));
+        AlarmList.setLayoutManager(new LinearLayoutManager(this)) ;
+
+
     }
 }

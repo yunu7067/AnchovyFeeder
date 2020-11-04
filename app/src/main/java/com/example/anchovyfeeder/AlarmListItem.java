@@ -1,16 +1,11 @@
 package com.example.anchovyfeeder;
 
-import android.os.Build;
-
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 public class AlarmListItem {
     private Boolean use;
     private Calendar time;
-    private int hour;
-    private int minute;
-    private int second;
     private String name;
 
     public void setUse(Boolean value) {
@@ -18,7 +13,7 @@ public class AlarmListItem {
     }
 
     public Boolean getUse() {
-        return use;
+        return this.use;
     }
 
     public void setTime(int hh, int mm, int ss) {
@@ -39,6 +34,6 @@ public class AlarmListItem {
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 }

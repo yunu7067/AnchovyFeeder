@@ -4,6 +4,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.opencsv.CSVReader;
@@ -38,10 +40,11 @@ public class MainActivity extends AppCompatActivity {
         //ConvertCSVtoRealm();
         LoadRealmAndView();
         //CreateOrLoadAlarmListByRealm();
+        AttachMainActivityItems();
     }
 
     public void ConvertCSVtoRealm() {
-        Realm mRealm = Realm.getDefaultInstance();
+        final Realm mRealm = Realm.getDefaultInstance();
         mRealm.executeTransaction(
                 new Realm.Transaction() {
                     @Override
@@ -109,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void CreateOrLoadAlarmListByRealm() {
-        Realm mRealm;
+        final Realm mRealm;
         RealmConfiguration config = new RealmConfiguration.Builder()
                 .name("userdatas.realm")
                 .modules(new BundledRealmModule())
@@ -131,5 +134,14 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+    }
+
+    public void AttachMainActivityItems() {
+        final String[] listViewitems = { "호랑이", "토끼", "곰"};
+
+        ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, listViewitems) ;
+
+        ListView listview = (ListView) findViewById(R.id.AlarmList) ;
+        listview.setAdapter(adapter) ;
     }
 }

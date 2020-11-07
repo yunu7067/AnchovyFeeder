@@ -9,6 +9,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -142,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void AttachMainActivityItems() {
-        final String[] listViewitems = {"호랑이", "토끼", "곰", "돌고래", "고양이", "삵", "뱀", "원숭이", "쥐"};
+        final String[] listViewitems = {"호랑이", "토끼", "곰", "돌고래", "지렁이", "굴", "얼리버드", "타잔", "땃쥐", "뱁새"};
         final ArrayList<AlarmListItem> list = new ArrayList<AlarmListItem>();
         for (String item : listViewitems) {
             AlarmListItem listitem = new AlarmListItem();
@@ -156,12 +158,20 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView AlarmList = (RecyclerView) findViewById(R.id.AlarmList);
 
         // 리사이클러뷰에 SimpleTextAdapter 객체 지정.
-        AlarmListAdaper adapter = new AlarmListAdaper(list);
+        final AlarmListAdaper adapter = new AlarmListAdaper(list);
         AlarmList.setAdapter(adapter);
         // 구분선
         AlarmList.addItemDecoration(new DividerItemDecoration(getApplicationContext(), DividerItemDecoration.VERTICAL));
         AlarmList.setLayoutManager(new LinearLayoutManager(this)) ;
 
+        ImageButton addAlarmButton = (ImageButton) findViewById(R.id.CardHeaderAdd);
+        addAlarmButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AlarmDialog aldial = new AlarmDialog(view.getContext(), adapter, list);
+                aldial.show();
+            }
+        });
 
     }
 }

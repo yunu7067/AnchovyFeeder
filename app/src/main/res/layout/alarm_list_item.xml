@@ -6,7 +6,9 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center"
-    android:paddingRight="5dp">
+    android:background="#000F"
+    android:paddingStart="0dp"
+    android:paddingEnd="3dp">
 
     <CheckBox
         android:id="@+id/alarm_checkBox"
@@ -14,13 +16,13 @@
         android:layout_height="wrap_content"
         android:layout_weight="0"/>
 
-    <EditText
+    <TextView
         android:id="@+id/alarm_editTextTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="0"
-        android:ems="7"
-        android:inputType="time" />
+        android:layout_marginEnd="10dp"
+        android:text=""/>
 
     <TextView
         android:id="@+id/alarm_textView"
@@ -28,13 +30,25 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:textSize="18sp"
-        android:text="TextView" />
+        android:layout_marginEnd="10dp"
+        android:text="" />
 
     <ImageButton
-        android:id="@+id/alarm_imageButton"
+        android:id="@+id/alarm_imageButton_edit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="0"
-        android:background="#000F"
-        app:srcCompat="@drawable/ic_baseline_delete_24" />
+        android:background="#FFFF"
+        android:layout_marginEnd="5dp"
+        app:srcCompat="@drawable/ic_baseline_edit_24"
+        android:contentDescription="@string/edit_item_desc" />
+
+    <ImageButton
+        android:id="@+id/alarm_imageButton_delete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:background="#FFFF"
+        app:srcCompat="@drawable/ic_baseline_delete_24"
+        android:contentDescription="@string/delete_item_desc" />
 </LinearLayout>

@@ -4,9 +4,9 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 public class AlarmListItem {
-    private Boolean use;
+    private Boolean use = true;
     private Calendar time;
-    private String name;
+    private String name = "";
 
     public void setUse(Boolean value) {
         this.use = value;
@@ -27,6 +27,14 @@ public class AlarmListItem {
         SimpleDateFormat form = new SimpleDateFormat(format);
         String formattedTime = form.format(time.getTime());
         return formattedTime;
+    }
+
+    public int getHour() {
+        return time.get(Calendar.HOUR_OF_DAY);
+    }
+
+    public int getMinute() {
+        return time.get(Calendar.MINUTE);
     }
 
     public void setName(String value) {

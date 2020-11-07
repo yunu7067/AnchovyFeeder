@@ -17,6 +17,7 @@
                 android:id="@+id/CardView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                app:cardUseCompatPadding="true"
                 android:layout_weight="0">
 
                 <LinearLayout
@@ -50,7 +51,7 @@
                             android:layout_gravity="center"
                             android:layout_marginEnd="5dp"
                             android:layout_weight="0"
-                            android:background="#FFFFFF"
+                            android:background="@android:color/transparent"
                             android:contentDescription="@string/CardHeaderAdd"
                             android:src="@drawable/ic_baseline_add_alarm_24" />
                     </LinearLayout>
@@ -58,8 +59,7 @@
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/AlarmList"
                         android:layout_width="match_parent"
-                        android:layout_height="250dp"
-                        android:padding="3dp" />
+                        android:layout_height="250dp"/>
                 </LinearLayout>
 
             </androidx.cardview.widget.CardView>
@@ -68,6 +68,7 @@
                 android:id="@+id/textarea"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
                 android:padding="5dp"
                 android:text=""
                 android:layout_weight="0"/>

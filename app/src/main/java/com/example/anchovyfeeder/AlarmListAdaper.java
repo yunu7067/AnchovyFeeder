@@ -1,21 +1,17 @@
 package com.example.anchovyfeeder;
 
 import android.app.AlertDialog;
-import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.nio.charset.CharacterCodingException;
 import java.util.ArrayList;
 
 public class AlarmListAdaper extends RecyclerView.Adapter<AlarmListAdaper.ViewHolder> {
@@ -79,7 +75,7 @@ public class AlarmListAdaper extends RecyclerView.Adapter<AlarmListAdaper.ViewHo
                     final int pos = getAdapterPosition(); // 현재 아이템 번호
                     if (pos != RecyclerView.NO_POSITION) {
                         //Toast.makeText(view.getContext(), "dasf:" + pos, Toast.LENGTH_SHORT).show();
-                        AlarmDialog aldial = new AlarmDialog(view.getContext(), AlarmListAdaper.this, mData);
+                        AlarmAddOrUpdateDialog aldial = new AlarmAddOrUpdateDialog(view.getContext(), AlarmListAdaper.this, mData);
                         aldial.setItemPosition(pos);
                         aldial.show();
                     }

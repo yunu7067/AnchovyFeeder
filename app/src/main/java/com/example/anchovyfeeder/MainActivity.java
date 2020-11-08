@@ -5,14 +5,19 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.opencsv.CSVReader;
 
@@ -21,15 +26,12 @@ import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
-import io.realm.DynamicRealm;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
-import io.realm.RealmMigration;
-import io.realm.RealmObject;
-import io.realm.RealmObjectSchema;
-import io.realm.RealmSchema;
 import io.realm.annotations.RealmModule;
 
 public class MainActivity extends AppCompatActivity {
@@ -109,7 +111,9 @@ public class MainActivity extends AppCompatActivity {
 
         TextView tv = (TextView) findViewById(R.id.textarea);
         tv.append("Realm 테스트\n");
-        FoodObject fo = mRealm.where(FoodObject.class).contains("FOOD_NAME", "홍차").findFirst();
+        FoodObject fo = mRealm.where(FoodObject.class)
+                .contains("FOOD_NAME", "홍차")
+                .findFirst();
         if (fo != null) {
             //vo2.deleteFromRealm();
             tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
@@ -144,7 +148,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void AttachMainActivityItems() {
-        final String[] listViewitems = {"호랑이", "토끼", "곰", "돌고래", "지렁이", "굴", "얼리버드", "타잔", "땃쥐", "뱁새"};
+        final String[] listViewitems = {"호랑이", "토끼", "곰", "돌고래", "지렁이",
+                "굴", "얼리버드", "타잔", "땃쥐", "뱁새"};
         final ArrayList<AlarmListItem> list = new ArrayList<AlarmListItem>();
         for (String item : listViewitems) {
             AlarmListItem listitem = new AlarmListItem();
@@ -161,17 +166,76 @@ public class MainActivity extends AppCompatActivity {
         final AlarmListAdaper adapter = new AlarmListAdaper(list);
         AlarmList.setAdapter(adapter);
         // 구분선
-        AlarmList.addItemDecoration(new DividerItemDecoration(getApplicationContext(), DividerItemDecoration.VERTICAL));
-        AlarmList.setLayoutManager(new LinearLayoutManager(this)) ;
+        AlarmList.addItemDecoration(new DividerItemDecoration(
+                getApplicationContext(), DividerItemDecoration.VERTICAL)
+        );
+        AlarmList.setLayoutManager(new LinearLayoutManager(this));
 
         ImageButton addAlarmButton = (ImageButton) findViewById(R.id.CardHeaderAdd);
         addAlarmButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                AlarmDialog aldial = new AlarmDialog(view.getContext(), adapter, list);
+                AlarmAddOrUpdateDialog aldial = new AlarmAddOrUpdateDialog(view.getContext(), adapter, list);
                 aldial.show();
             }
         });
 
+        Calendar mC = Calendar.getInstance();
+        mC.set(Calendar.HOUR_OF_DAY, 01);
+        mC.set(Calendar.MINUTE, 49);
+        mC.set(Calendar.SECOND, 30);
+
+        // 이미 지난 시간을 지정했다면 다음날 같은 시간으로 설정
+        if (mC.before(Calendar.getInstance())) {
+            mC.add(Calendar.DATE, 1);
+        }
+        Date currentDateTime = mC.getTime();
+        String date_text = new SimpleDateFormat("yyyy년 MM월 dd일 EE요일 a hh시 mm분 ", Locale.getDefault()).format(currentDateTime);
+        Toast.makeText(getApplicationContext(), date_text + "으로 알람이 설정되었습니다!", Toast.LENGTH_SHORT).show();
+
+        //  Preference에 설정한 값 저장
+        SharedPreferences.Editor editor = getSharedPreferences("daily alarm", MODE_PRIVATE).edit();
+        editor.putLong("nextNotifyTime", (long) mC.getTimeInMillis());
+        editor.apply();
+
+        diaryNotification(mC);
+
+
+
+        //startActivity(new Intent(getApplicationContext(), AlarmNotifyActivity.class));
+
+
+    }
+
+    void diaryNotification(Calendar calendar) {
+        Boolean dailyNotify = true; // 무조건 알람을 사용
+
+        PackageManager pm = this.getPackageManager();
+        //ComponentName receiver = new ComponentName(this, DeviceBootReceiver.class);
+        Intent alarmIntent = new Intent(this, AlarmReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, 0);
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+
+        // 사용자가 매일 알람을 허용했다면
+        if (dailyNotify) {
+
+
+            if (alarmManager != null) {
+
+                alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(),
+                        AlarmManager.INTERVAL_DAY, pendingIntent);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+                }
+            }
+
+            // 부팅 후 실행되는 리시버 사용가능하게 설정
+//            pm.setComponentEnabledSetting(receiver,
+//                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+//                    PackageManager.DONT_KILL_APP);
+
+        }
     }
 }

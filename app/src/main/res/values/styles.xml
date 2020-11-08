@@ -7,4 +7,8 @@
         <item name="colorAccent">@android:color/holo_purple</item>
     </style>
 
+    <style name="DialActivity" parent="Theme.AppCompat.Light.Dialog">
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+    </style>
 </resources>

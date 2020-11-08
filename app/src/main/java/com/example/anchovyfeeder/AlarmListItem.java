@@ -29,6 +29,8 @@ public class AlarmListItem {
         return formattedTime;
     }
 
+    public Calendar getTime() {return this.time;}
+
     public int getHour() {
         return time.get(Calendar.HOUR_OF_DAY);
     }

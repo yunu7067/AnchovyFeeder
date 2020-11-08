@@ -35,7 +35,7 @@ public class AlarmDialog extends Dialog implements View.OnClickListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.alarm_dialog);
+        setContentView(R.layout.alarm_add_or_update_dialog);
 
 
         ImageButton exitButton = findViewById(R.id.alarm_dialog_alarm_exit_button);

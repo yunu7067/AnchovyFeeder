@@ -1,7 +1,9 @@
 package com.example.anchovyfeeder;
 
+import android.app.AlertDialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -74,13 +76,39 @@ public class AlarmListAdaper extends RecyclerView.Adapter<AlarmListAdaper.ViewHo
 
                 @Override
                 public void onClick(View view) {
-                    int pos = getAdapterPosition();
+                    final int pos = getAdapterPosition(); // 현재 아이템 번호
                     if (pos != RecyclerView.NO_POSITION) {
                         //Toast.makeText(view.getContext(), "dasf:" + pos, Toast.LENGTH_SHORT).show();
                         AlarmDialog aldial = new AlarmDialog(view.getContext(), AlarmListAdaper.this, mData);
                         aldial.setItemPosition(pos);
                         aldial.show();
                     }
+                }
+            });
+
+
+            deleteButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(final View view) {
+                    final int pos = getAdapterPosition(); // 현재 아이템 번호
+                    AlertDialog.Builder dial = new AlertDialog.Builder(view.getContext());
+                    dial.setTitle("주의");
+                    dial.setMessage("정말 삭제하시겠습니까? 삭제 후에는 복구가 불가능합니다.");
+                    dial.setPositiveButton("예",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    //Toast.makeText(view.getContext(), "dasf:" + pos, Toast.LENGTH_SHORT).show();
+                                    if (pos != RecyclerView.NO_POSITION) {
+                                        mData.remove(pos);
+                                        notifyDataSetChanged();
+                                        //notifyDataSetChanged();
+                                    }
+                                }
+                            }
+                    );
+                    dial.setNegativeButton("아니오", null);
+                    dial.create().show();
                 }
             });
         }

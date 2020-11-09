@@ -4,6 +4,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.BackoffPolicy;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -29,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
@@ -179,34 +186,63 @@ public class MainActivity extends AppCompatActivity {
                 aldial.show();
             }
         });
-
+        /*
         Calendar mC = Calendar.getInstance();
-        mC.set(Calendar.HOUR_OF_DAY, 01);
-        mC.set(Calendar.MINUTE, 49);
-        mC.set(Calendar.SECOND, 30);
+        mC.set(Calendar.HOUR_OF_DAY, 21);
+        mC.set(Calendar.MINUTE, 37);
+        mC.set(Calendar.SECOND, 00);
 
         // 이미 지난 시간을 지정했다면 다음날 같은 시간으로 설정
         if (mC.before(Calendar.getInstance())) {
             mC.add(Calendar.DATE, 1);
         }
-        Date currentDateTime = mC.getTime();
-        String date_text = new SimpleDateFormat("yyyy년 MM월 dd일 EE요일 a hh시 mm분 ", Locale.getDefault()).format(currentDateTime);
-        Toast.makeText(getApplicationContext(), date_text + "으로 알람이 설정되었습니다!", Toast.LENGTH_SHORT).show();
+        Date currentDateTime = list.get(1).getTime().getTime();
+        String date_text = new SimpleDateFormat("a hh시 mm분 ", Locale.getDefault()).format(currentDateTime);
+        //Toast.makeText(getApplicationContext(), date_text + "으로 알람이 설정되었습니다!", Toast.LENGTH_SHORT).show();
+
 
         //  Preference에 설정한 값 저장
         SharedPreferences.Editor editor = getSharedPreferences("daily alarm", MODE_PRIVATE).edit();
-        editor.putLong("nextNotifyTime", (long) mC.getTimeInMillis());
+        //editor.putLong("nextNotifyTime", (long) mC.getTimeInMillis());
+        editor.putLong("nextNotifyTime", (long) list.get(1).getTime().getTimeInMillis());
         editor.apply();
 
-        diaryNotification(mC);
+        diaryNotification(list.get(1).getTime());
+        */
 
 
+        // WorkManager 테스트용
+        // https://developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work?hl=ko#schedule_periodic_work
+        // PeriodicWorkRequest를 이용하여 주기적으로 실행되는 WorkRequest 객체를 생성 (1일 간격)
 
-        //startActivity(new Intent(getApplicationContext(), AlarmNotifyActivity.class));
+        /*
+        Data mData = new Data.Builder()
+                .putString("name", "123")
+                .build();
+        */
+        PeriodicWorkRequest saveRequest =
+                new PeriodicWorkRequest.Builder(AlarmWorker.class, 1, TimeUnit.DAYS)
+                        // 작업을 식별하는데 사용하는 태그 지정
+                        .addTag("테그")
+                        // 입력 데이터 할당. 값은 Data 객체에 Key-Value 쌍으로 저장된다
+                        //.setInputData(mData)
+                        // 특정 시간에 시작하는 함수가 없으므로 지연을 사용하여 시작 시간을 설정해야 한다.
+                        .setInitialDelay(10, TimeUnit.SECONDS)
+                        .setBackoffCriteria(
+                                BackoffPolicy.LINEAR,
+                                30,
+                                TimeUnit.MINUTES
+                        )
+                        .build();
 
+        //Toast.makeText(getApplicationContext(), saveRequest.getTags().toArray()[1].toString(), Toast.LENGTH_SHORT).show();
 
+        // WorkManager 큐에 추가
+        WorkManager
+                .getInstance(getApplicationContext())
+                .enqueue(saveRequest);
     }
-
+    /*
     void diaryNotification(Calendar calendar) {
         Boolean dailyNotify = true; // 무조건 알람을 사용
 
@@ -238,4 +274,5 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
+    */
 }

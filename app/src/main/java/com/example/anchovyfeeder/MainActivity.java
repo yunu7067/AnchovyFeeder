@@ -17,6 +17,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -166,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void AttachMainActivityItems() {
         final String[] listViewitems = {"호랑이", "토끼", "곰", "돌고래", "지렁이",
-                "굴", "얼리버드", "타잔", "땃쥐", "뱁새"};
+                "굴", "땃쥐", "뱁새"};
         final ArrayList<AlarmListItem> list = new ArrayList<AlarmListItem>();
         for (String item : listViewitems) {
             AlarmListItem listitem = new AlarmListItem();
@@ -246,25 +247,33 @@ public class MainActivity extends AppCompatActivity {
         WorkManager
                 .getInstance(getApplicationContext())
                 .enqueue(saveRequest2);
+
+        drawGraph();
     }
 
-    private LineChart lineChart;
-    public void drawGraph() {
-        ArrayList<Entry> entry_chart = new ArrayList<>();
+       public void drawGraph() {
+        LineChart lineChart = findViewById(R.id.chart);
 
+        ArrayList<Entry> entry1 = new ArrayList<>();
+        ArrayList<Entry> entry2 = new ArrayList<>();
 
-        lineChart = (LineChart) findViewById(R.id.chart);//layout의 id
+        //그래프에 들어갈 좌표값 입력
+        entry1.add(new Entry(0, 1));
+        entry1.add(new Entry(1, 12));
+        entry1.add(new Entry(2, 3));
+
+        entry2.add(new Entry(0, 1));
+        entry2.add(new Entry(1, 3));
+        entry2.add(new Entry(2, 5));
+
         LineData chartData = new LineData();
+        LineDataSet set1 = new LineDataSet(entry1, "라벨명1");
+        chartData.addDataSet(set1);
 
-        entry_chart.add(new Entry(50, 100));
-    /* 만약 (2, 3) add하고 (2, 5)한다고해서
-    기존 (2, 3)이 사라지는게 아니라 x가 2인곳에 y가 3, 5의 점이 찍힘 */
-
-        LineDataSet lineDataSet = new LineDataSet(entry_chart, "꺽은선1");
-        chartData.addDataSet(lineDataSet);
+        LineDataSet set2 = new LineDataSet(entry2, "라벨명2");
+        chartData.addDataSet(set2);
 
         lineChart.setData(chartData);
-
         lineChart.invalidate();
     }
 

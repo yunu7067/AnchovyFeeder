@@ -1,31 +1,29 @@
 package com.example.anchovyfeeder;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.work.BackoffPolicy;
-import androidx.work.Data;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
-import androidx.work.WorkRequest;
-
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.BackoffPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.IFillFormatter;
+import com.github.mikephil.charting.interfaces.dataprovider.LineDataProvider;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.opencsv.CSVReader;
 
 import java.io.BufferedReader;
@@ -33,25 +31,13 @@ import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.annotations.RealmModule;
+
 //MPAndroidChart import
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.Description;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.github.mikephil.charting.utils.ColorTemplate;
-import com.github.mikephil.charting.charts.LineChart;
 
 public class MainActivity extends AppCompatActivity {
     @RealmModule(classes = {FoodObject.class})
@@ -70,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         //CreateOrLoadAlarmListByRealm();
         AttachMainActivityItems();
     }
+
     public void ConvertCSVtoRealm() {
         final Realm mRealm = Realm.getDefaultInstance();
         mRealm.executeTransaction(
@@ -248,33 +235,136 @@ public class MainActivity extends AppCompatActivity {
                 .getInstance(getApplicationContext())
                 .enqueue(saveRequest2);
 
-        drawGraph();
+        createGraph();
+        setChartData();
     }
 
-       public void drawGraph() {
-        LineChart lineChart = findViewById(R.id.chart);
+    private void setEvent() {
+        // TODO : 칼로리 추가, 몸무게 추가 리스너 추가
+    }
 
-        ArrayList<Entry> entry1 = new ArrayList<>();
-        ArrayList<Entry> entry2 = new ArrayList<>();
+    private void createGraph() {
+        LineChart myChart = findViewById(R.id.chart);
+        myChart.setScaleEnabled(false);
+        myChart.getDescription().setEnabled(false);
+
+        XAxis xAxis = myChart.getXAxis();
+        xAxis.setTextSize(11);
+        xAxis.setGranularity(1f);
+        xAxis.setGranularityEnabled(true);
+        xAxis.setTextColor(Color.BLACK);
+        xAxis.setDrawGridLines(true);
+        xAxis.setDrawAxisLine(false);
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+
+        YAxis leftAxis = myChart.getAxisLeft();
+        leftAxis.setDrawLabels(false);
+
+        YAxis rightAxis = myChart.getAxisRight();
+        rightAxis.setAxisMaximum(120f);
+        rightAxis.setAxisMinimum(30f);
+        rightAxis.setDrawGridLines(false);
+        rightAxis.setDrawZeroLine(false);
+        rightAxis.setDrawLabels(false);
+        rightAxis.setGranularityEnabled(false);
+        myChart.invalidate();
+    }
+
+    public void setChartData() {
+        final LineChart chart = findViewById(R.id.chart);
+        chart.animateY(2000);
+
+        ArrayList<Entry> calEntry = new ArrayList<>();
+        ArrayList<Entry> weightEntry = new ArrayList<>();
 
         //그래프에 들어갈 좌표값 입력
-        entry1.add(new Entry(0, 1));
-        entry1.add(new Entry(1, 12));
-        entry1.add(new Entry(2, 3));
+        calEntry.add(new Entry(1, 2000));
+        calEntry.add(new Entry(2, 3500));
+        calEntry.add(new Entry(3, 2100));
 
-        entry2.add(new Entry(0, 1));
-        entry2.add(new Entry(1, 3));
-        entry2.add(new Entry(2, 5));
+        weightEntry.add(new Entry(1, 57f));
+        weightEntry.add(new Entry(2, 58f));
+        weightEntry.add(new Entry(3, 110f));
+        weightEntry.add(new Entry(5, 61.2f));
+        weightEntry.add(new Entry(31, 71.2f));
 
+        LineDataSet calSet, weightSet;
+
+        if (chart.getData() != null &&
+                chart.getData().getDataSetCount() > 0) {
+
+            calSet = (LineDataSet) chart.getData().getDataSetByIndex(0);
+            calSet.setValues(calEntry);
+
+            weightSet = (LineDataSet) chart.getData().getDataSetByIndex(1);
+            weightSet.setValues(weightEntry);
+
+            chart.getData().notifyDataChanged();
+            chart.notifyDataSetChanged();
+
+        } else {
+            calSet = new LineDataSet(calEntry, "칼로리");
+            calSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            calSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+            myValueFormatter calorieFormatter = new myValueFormatter();
+            calorieFormatter.setUnit("Kcal");
+            calSet.setValueFormatter(calorieFormatter);
+            calSet.setCubicIntensity(0.2f);
+            calSet.setDrawFilled(true);
+            calSet.setDrawCircles(false);
+            calSet.setLineWidth(1.8f);
+            calSet.setCircleRadius(4f);
+            calSet.setValueTextSize(10f);
+            calSet.setCircleColor(Color.WHITE);
+            calSet.setHighLightColor(Color.rgb(244, 117, 117));
+            calSet.setColor(getColor(R.color.colorLine1));
+            calSet.setFillColor(getColor(R.color.colorLine1));
+            calSet.setFillAlpha(200);
+            calSet.setDrawHorizontalHighlightIndicator(false);
+            calSet.setFillFormatter(new IFillFormatter() {
+                @Override
+                public float getFillLinePosition(ILineDataSet dataSet, LineDataProvider dataProvider) {
+                    return chart.getAxisLeft().getAxisMinimum();
+                }
+            });
+
+            weightSet = new LineDataSet(weightEntry, "몸무게");
+            weightSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
+            weightSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
+            myValueFormatter weightFormatter = new myValueFormatter();
+            weightFormatter.setUnit("Kg");
+            weightSet.setValueFormatter(weightFormatter);
+            weightSet.setCubicIntensity(0.2f);
+            weightSet.setDrawFilled(false);
+            weightSet.setDrawCircles(true);
+            weightSet.setLineWidth(1.8f);
+            weightSet.setValueTextSize(10f);
+            weightSet.setCircleRadius(4f);
+            weightSet.setCircleColor(Color.WHITE);
+            weightSet.setHighLightColor(Color.rgb(244, 117, 117));
+            weightSet.setColor(getColor(R.color.colorLine2));
+            weightSet.setFillColor(getColor(R.color.colorLine2));
+            weightSet.setFillAlpha(0);
+            weightSet.setDrawHorizontalHighlightIndicator(false);
+            weightSet.setFillFormatter(new IFillFormatter() {
+                @Override
+                public float getFillLinePosition(ILineDataSet dataSet, LineDataProvider dataProvider) {
+                    return chart.getAxisLeft().getAxisMinimum();
+                }
+            });
+        }
+
+
+        // create a data object with the data sets
         LineData chartData = new LineData();
-        LineDataSet set1 = new LineDataSet(entry1, "라벨명1");
-        chartData.addDataSet(set1);
+        chartData.addDataSet(calSet);
+        chartData.addDataSet(weightSet);
 
-        LineDataSet set2 = new LineDataSet(entry2, "라벨명2");
-        chartData.addDataSet(set2);
+        // set data
+        chart.setData(chartData);
+        chart.setDragOffsetX(30f);
 
-        lineChart.setData(chartData);
-        lineChart.invalidate();
+        chart.setVisibleXRangeMaximum(7);
+        chart.moveViewToX(chart.getXRange());
     }
-
 }

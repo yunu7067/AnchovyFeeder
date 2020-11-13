@@ -10,7 +10,6 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/colorAccent"
         android:orientation="vertical">
 
         <TextView
@@ -19,21 +18,24 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="10dp"
             android:layout_marginVertical="15dp"
+            android:textColor="@color/colorAccent"
             android:text="@string/graph_card_view_title"
-            android:textColor="@android:color/white"
             android:textSize="20sp"
             android:textStyle="bold" />
 
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart"
             android:layout_width="match_parent"
-            android:layout_height="300dp" />
+            android:layout_height="300dp"
+            android:layout_marginBottom="10dp"/>
 
         <LinearLayout
             android:id="@+id/addCaloris"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/colorLine1"
+            android:background="@drawable/layout_selector_calories"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
             android:orientation="horizontal"
             android:paddingHorizontal="10dp"
@@ -64,7 +66,9 @@
             android:id="@+id/addWeights"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/colorLine2"
+            android:background="@drawable/layout_selector_weights"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
             android:orientation="horizontal"
             android:paddingHorizontal="10dp"

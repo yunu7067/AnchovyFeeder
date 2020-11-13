@@ -23,7 +23,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageButton
-        android:id="@+id/imageButton"
+        android:id="@+id/alarm_camera_button"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="5dp"
@@ -31,7 +31,7 @@
         android:scaleType="center"
         app:layout_constraintBottom_toTopOf="@+id/textView3"
         app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintEnd_toStartOf="@+id/imageButton2"
+        app:layout_constraintEnd_toStartOf="@+id/alarm_delay_button"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/alarm_dialog_title"
@@ -39,7 +39,7 @@
         app:srcCompat="@drawable/ic_baseline_add_a_photo_72" />
 
     <ImageButton
-        android:id="@+id/imageButton2"
+        android:id="@+id/alarm_delay_button"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="5dp"
@@ -47,8 +47,8 @@
         android:scaleType="center"
         app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/imageButton"
-        app:layout_constraintTop_toTopOf="@+id/imageButton"
+        app:layout_constraintStart_toEndOf="@+id/alarm_camera_button"
+        app:layout_constraintTop_toTopOf="@+id/alarm_camera_button"
         app:srcCompat="@drawable/ic_baseline_update_72" />
 
     <TextView
@@ -57,9 +57,9 @@
         android:layout_height="wrap_content"
         android:text="음식 찍기"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="@+id/imageButton"
-        app:layout_constraintStart_toStartOf="@+id/imageButton"
-        app:layout_constraintTop_toBottomOf="@+id/imageButton" />
+        app:layout_constraintEnd_toEndOf="@+id/alarm_camera_button"
+        app:layout_constraintStart_toStartOf="@+id/alarm_camera_button"
+        app:layout_constraintTop_toBottomOf="@+id/alarm_camera_button" />
 
     <TextView
         android:id="@+id/textView4"
@@ -68,9 +68,9 @@
         android:scaleType="center"
         android:text="알람 미루기"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="@+id/imageButton2"
-        app:layout_constraintStart_toStartOf="@+id/imageButton2"
-        app:layout_constraintTop_toBottomOf="@+id/imageButton2" />
+        app:layout_constraintEnd_toEndOf="@+id/alarm_delay_button"
+        app:layout_constraintStart_toStartOf="@+id/alarm_delay_button"
+        app:layout_constraintTop_toBottomOf="@+id/alarm_delay_button" />
 
     <Space
         android:layout_width="0dp"

@@ -40,6 +40,17 @@ import java.util.concurrent.TimeUnit;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.annotations.RealmModule;
+//MPAndroidChart import
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.utils.ColorTemplate;
+import com.github.mikephil.charting.charts.LineChart;
 
 public class MainActivity extends AppCompatActivity {
     @RealmModule(classes = {FoodObject.class})
@@ -58,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
         //CreateOrLoadAlarmListByRealm();
         AttachMainActivityItems();
     }
-
     public void ConvertCSVtoRealm() {
         final Realm mRealm = Realm.getDefaultInstance();
         mRealm.executeTransaction(
@@ -186,30 +196,6 @@ public class MainActivity extends AppCompatActivity {
                 aldial.show();
             }
         });
-        /*
-        Calendar mC = Calendar.getInstance();
-        mC.set(Calendar.HOUR_OF_DAY, 21);
-        mC.set(Calendar.MINUTE, 37);
-        mC.set(Calendar.SECOND, 00);
-
-        // 이미 지난 시간을 지정했다면 다음날 같은 시간으로 설정
-        if (mC.before(Calendar.getInstance())) {
-            mC.add(Calendar.DATE, 1);
-        }
-        Date currentDateTime = list.get(1).getTime().getTime();
-        String date_text = new SimpleDateFormat("a hh시 mm분 ", Locale.getDefault()).format(currentDateTime);
-        //Toast.makeText(getApplicationContext(), date_text + "으로 알람이 설정되었습니다!", Toast.LENGTH_SHORT).show();
-
-
-        //  Preference에 설정한 값 저장
-        SharedPreferences.Editor editor = getSharedPreferences("daily alarm", MODE_PRIVATE).edit();
-        //editor.putLong("nextNotifyTime", (long) mC.getTimeInMillis());
-        editor.putLong("nextNotifyTime", (long) list.get(1).getTime().getTimeInMillis());
-        editor.apply();
-
-        diaryNotification(list.get(1).getTime());
-        */
-
 
         // WorkManager 테스트용
         // https://developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work?hl=ko#schedule_periodic_work
@@ -227,7 +213,23 @@ public class MainActivity extends AppCompatActivity {
                         // 입력 데이터 할당. 값은 Data 객체에 Key-Value 쌍으로 저장된다
                         //.setInputData(mData)
                         // 특정 시간에 시작하는 함수가 없으므로 지연을 사용하여 시작 시간을 설정해야 한다.
-                        .setInitialDelay(10, TimeUnit.SECONDS)
+                        //.setInitialDelay(5, TimeUnit.SECONDS)
+                        /*
+                        .setBackoffCriteria(
+                                BackoffPolicy.LINEAR,
+                                30,
+                                TimeUnit.MINUTES
+                        )*/
+                        .build();
+
+        PeriodicWorkRequest saveRequest2 =
+                new PeriodicWorkRequest.Builder(AlarmWorker.class, 1, TimeUnit.DAYS)
+                        // 작업을 식별하는데 사용하는 태그 지정
+                        .addTag("테그")
+                        // 입력 데이터 할당. 값은 Data 객체에 Key-Value 쌍으로 저장된다
+                        //.setInputData(mData)
+                        // 특정 시간에 시작하는 함수가 없으므로 지연을 사용하여 시작 시간을 설정해야 한다.
+                        .setInitialDelay(15, TimeUnit.SECONDS)
                         .setBackoffCriteria(
                                 BackoffPolicy.LINEAR,
                                 30,
@@ -241,38 +243,29 @@ public class MainActivity extends AppCompatActivity {
         WorkManager
                 .getInstance(getApplicationContext())
                 .enqueue(saveRequest);
+        WorkManager
+                .getInstance(getApplicationContext())
+                .enqueue(saveRequest2);
     }
-    /*
-    void diaryNotification(Calendar calendar) {
-        Boolean dailyNotify = true; // 무조건 알람을 사용
 
-        PackageManager pm = this.getPackageManager();
-        //ComponentName receiver = new ComponentName(this, DeviceBootReceiver.class);
-        Intent alarmIntent = new Intent(this, AlarmReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, 0);
-        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+    private LineChart lineChart;
+    public void drawGraph() {
+        ArrayList<Entry> entry_chart = new ArrayList<>();
 
 
-        // 사용자가 매일 알람을 허용했다면
-        if (dailyNotify) {
+        lineChart = (LineChart) findViewById(R.id.chart);//layout의 id
+        LineData chartData = new LineData();
 
+        entry_chart.add(new Entry(50, 100));
+    /* 만약 (2, 3) add하고 (2, 5)한다고해서
+    기존 (2, 3)이 사라지는게 아니라 x가 2인곳에 y가 3, 5의 점이 찍힘 */
 
-            if (alarmManager != null) {
+        LineDataSet lineDataSet = new LineDataSet(entry_chart, "꺽은선1");
+        chartData.addDataSet(lineDataSet);
 
-                alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(),
-                        AlarmManager.INTERVAL_DAY, pendingIntent);
+        lineChart.setData(chartData);
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
-                }
-            }
-
-            // 부팅 후 실행되는 리시버 사용가능하게 설정
-//            pm.setComponentEnabledSetting(receiver,
-//                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-//                    PackageManager.DONT_KILL_APP);
-
-        }
+        lineChart.invalidate();
     }
-    */
+
 }

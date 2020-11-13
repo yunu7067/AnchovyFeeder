@@ -51,7 +51,6 @@ public class AlarmReceiver extends BroadcastReceiver {
 */
 
 
-
         NotificationManager notifyManager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         Intent notifyIntent = new Intent(context, MainActivity.class);
@@ -90,7 +89,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 .setContentInfo("INFO")
                 .setContentIntent(pendingIntent);
 
-        if(notifyManager != null) {
+        if (notifyManager != null) {
             notifyManager.notify(1234, notifyCompatBuilder.build());
 
             Calendar nextNotifyTime = Calendar.getInstance();
@@ -103,7 +102,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
             Date currentDateTime = nextNotifyTime.getTime();
             String data_text = new SimpleDateFormat("yyyy년 MM월 dd일 EE요일 a hh시 mm분", Locale.getDefault()).format(currentDateTime);
-            Toast.makeText(context.getApplicationContext(), "다음 알람은 " + data_text+"으로 설정되었습니다.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context.getApplicationContext(), "다음 알람은 " + data_text + "으로 설정되었습니다.", Toast.LENGTH_SHORT).show();
 
         }
 

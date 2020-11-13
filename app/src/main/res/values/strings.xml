@@ -8,4 +8,7 @@
     <string name="alarm_dialog_alarm_title">알람 시간 설정</string>
     <string name="exit">EXIT</string>
     <string name="save">저장</string>
+    <string name="graph_card_view_title">그래프 추세</string>
+    <string name="add_caloris">칼로리 추가</string>
+    <string name="add_weights">몸무게 추가</string>
 </resources>

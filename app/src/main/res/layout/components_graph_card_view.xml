@@ -18,8 +18,8 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="10dp"
             android:layout_marginVertical="15dp"
-            android:textColor="@color/colorAccent"
             android:text="@string/graph_card_view_title"
+            android:textColor="@color/colorAccent"
             android:textSize="20sp"
             android:textStyle="bold" />
 
@@ -45,6 +45,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
+                android:clickable="false"
                 android:src="@drawable/ic_baseline_fastfood_36" />
 
             <TextView
@@ -52,6 +53,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:layout_weight="1"
+                android:clickable="false"
                 android:text="@string/add_caloris"
                 android:textSize="21sp" />
 
@@ -59,6 +61,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
+                android:clickable="false"
                 android:src="@drawable/ic_baseline_chevron_right_24" />
         </LinearLayout>
 

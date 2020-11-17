@@ -16,7 +16,7 @@
         android:paddingEnd="3dp">
 
         <TextView
-            android:id="@+id/alarm_dialog_alarm_title"
+            android:id="@+id/dialog_header_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -25,7 +25,7 @@
             android:textSize="17sp" />
 
         <ImageButton
-            android:id="@+id/alarm_dialog_alarm_exit_button"
+            android:id="@+id/dialog_header_exit_button"
             android:layout_width="36dp"
             android:layout_height="match_parent"
             android:layout_weight="0"
@@ -61,7 +61,7 @@
                     android:hint="@string/alarm_dialog_alarm_name_hint"
                     android:maxLength="10" />
             </com.google.android.material.textfield.TextInputLayout>
-
+            
             <TimePicker
                 android:id="@+id/alarm_dialog_time_picker"
                 android:layout_width="match_parent"
@@ -73,7 +73,7 @@
                 app:layout_constraintTop_toBottomOf="@id/alarm_dialog_alarm_name_layout" />
 
             <Button
-                android:id="@+id/alarm_dialog_save_button"
+                android:id="@+id/dialog_save_button"
                 android:layout_width="wrap_content"
                 android:layout_height="0dp"
                 android:layout_marginBottom="20dp"

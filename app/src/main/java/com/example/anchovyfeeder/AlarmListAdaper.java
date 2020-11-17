@@ -3,6 +3,7 @@ package com.example.anchovyfeeder;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.database.DataSetObserver;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,6 +54,7 @@ public class AlarmListAdaper extends RecyclerView.Adapter<AlarmListAdaper.ViewHo
 
     // 아이템 뷰를 저장하는 뷰홀더 클래스.
     public class ViewHolder extends RecyclerView.ViewHolder {
+
         CheckBox checkBox;
         TextView Time, name;
         ImageButton deleteButton, editButton;

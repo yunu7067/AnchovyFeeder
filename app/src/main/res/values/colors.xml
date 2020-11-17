@@ -8,7 +8,4 @@
     <color name="colorLine2">#FFB74D</color>
     <color name="colorLine2Pressed">#FF9800</color>
     <drawable name="d_colorLine1">#4FC3F7</drawable>
-    <drawable name="d_colorLine1Pressed">#03A9F4</drawable>
-    <drawable name="d_colorLine2">#FFB74D</drawable>
-    <drawable name="d_colorLine2Pressed">#FF9800</drawable>
 </resources>

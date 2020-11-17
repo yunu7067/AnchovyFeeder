@@ -2,6 +2,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
@@ -20,9 +21,10 @@
         android:id="@+id/alarm_editTextTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="0"
         android:layout_marginEnd="10dp"
-        android:text=""/>
+        android:layout_weight="0"
+        android:text=""
+        tools:text="12시 34분" />
 
     <TextView
         android:id="@+id/alarm_textView"
@@ -31,6 +33,7 @@
         android:layout_weight="1"
         android:textSize="18sp"
         android:layout_marginEnd="10dp"
+        tools:text="알람 제목"
         android:text="" />
 
     <ImageButton

@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.view.View;
+import android.view.MotionEvent;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,46 +39,54 @@ public class AlarmNotifyActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(AlarmNotifyActivity.this, PERMISSIONS, 1);
         }
 
-
         setContentView(R.layout.alarm_dialog);
 
 
-        TextView title = (TextView) findViewById(R.id.alarm_dialog_title);
+        TextView title = findViewById(R.id.dialog_header_layout);
         String APP_NAME = getString(R.string.app_name);
         final String ALARM_NAME = getIntent().getStringExtra("NAME");
         title.setText(APP_NAME + " - " + ALARM_NAME);
 
-        ImageButton cameraButton = (ImageButton) findViewById(R.id.alarm_camera_button);
-        ImageButton delayButton = (ImageButton) findViewById(R.id.alarm_delay_button);
+        ImageButton cameraButton = findViewById(R.id.alarm_camera_button);
+        ImageButton delayButton = findViewById(R.id.alarm_delay_button);
 
-        cameraButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+        cameraButton.setOnClickListener(view -> {
+            Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
 
-                startActivityForResult(cameraIntent, 1);
+            startActivityForResult(cameraIntent, 1);
 
-            }
         });
 
-        delayButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Work request 생성
-                WorkRequest dealyWorkRequest =
-                        new OneTimeWorkRequest.Builder(AlarmWorker.class)
-                                .setInitialDelay(30, TimeUnit.MINUTES)
-                                .addTag(ALARM_NAME)
-                                .build();
-                // WorkManager 큐에 추가
-                WorkManager
-                        .getInstance(getApplicationContext())
-                        .enqueue(dealyWorkRequest);
-                // 액티비티 종료
-                finish();
-            }
+        delayButton.setOnClickListener(view -> {
+            // Work request 생성
+            WorkRequest dealyWorkRequest =
+                    new OneTimeWorkRequest.Builder(AlarmWorker.class)
+                            .setInitialDelay(30, TimeUnit.MINUTES)
+                            .addTag(ALARM_NAME)
+                            .build();
+            // WorkManager 큐에 추가
+            WorkManager
+                    .getInstance(getApplicationContext())
+                    .enqueue(dealyWorkRequest);
+
+
+            // 액티비티 종료
+            finish();
         });
     }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        //바깥레이어 클릭시 안닫히게
+        return event.getAction() != MotionEvent.ACTION_OUTSIDE;
+    }
+
+    @Override
+    public void onBackPressed() {
+        //안드로이드 백버튼 막기
+        return;
+    }
+
 
     @Override
     protected void onDestroy() {
@@ -89,6 +97,7 @@ public class AlarmNotifyActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        // 카메라
         Toast.makeText(getApplicationContext(), "아직 준비 안됨", Toast.LENGTH_SHORT).show();
 
         if (resultCode == RESULT_OK && data.hasExtra("data")) {

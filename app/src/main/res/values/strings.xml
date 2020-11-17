@@ -11,4 +11,6 @@
     <string name="graph_card_view_title">그래프</string>
     <string name="add_caloris">칼로리 추가</string>
     <string name="add_weights">몸무게 추가</string>
+    <string name="take_picture">음식 찍기</string>
+    <string name="delay_alarm">알람 미루기</string>
 </resources>

@@ -7,7 +7,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 
 import java.text.DecimalFormat;
 
-public class myValueFormatter extends ValueFormatter {
+public class MyValueFormatter extends ValueFormatter {
     private DecimalFormat format = new DecimalFormat("###,##0.#");
     private String unit = null;
 

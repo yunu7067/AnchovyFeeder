@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.anchovyfeeder">
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.CAMERA" android:required="true" />
+    <uses-permission
+        android:name="android.permission.CAMERA"
+        android:required="true" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
     <uses-feature
         android:name="android.hardware.camera"
         android:required="true" />
@@ -28,9 +33,9 @@
             </intent-filter>
         </activity>
 
-        <receiver
-            android:name=".AlarmReceiver"
-            android:exported="false" />
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="camera"
+            tools:node="merge" />
     </application>
-
 </manifest>

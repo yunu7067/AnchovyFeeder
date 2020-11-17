@@ -6,7 +6,7 @@
     android:layout_height="wrap_content">
 
     <TextView
-        android:id="@+id/alarm_dialog_title"
+        android:id="@+id/dialog_header_layout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@color/colorPrimary"
@@ -34,7 +34,7 @@
         app:layout_constraintEnd_toStartOf="@+id/alarm_delay_button"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/alarm_dialog_title"
+        app:layout_constraintTop_toBottomOf="@+id/dialog_header_layout"
         android:layout_marginTop="10dp"
         app:srcCompat="@drawable/ic_baseline_add_a_photo_72" />
 
@@ -55,7 +55,7 @@
         android:id="@+id/textView3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="음식 찍기"
+        android:text="@string/take_picture"
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="@+id/alarm_camera_button"
         app:layout_constraintStart_toStartOf="@+id/alarm_camera_button"
@@ -66,7 +66,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:scaleType="center"
-        android:text="알람 미루기"
+        android:text="@string/delay_alarm"
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="@+id/alarm_delay_button"
         app:layout_constraintStart_toStartOf="@+id/alarm_delay_button"

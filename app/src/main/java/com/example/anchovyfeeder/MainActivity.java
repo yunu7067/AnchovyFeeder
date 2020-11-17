@@ -6,8 +6,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -40,6 +44,11 @@ import io.realm.annotations.RealmModule;
 //MPAndroidChart import
 
 public class MainActivity extends AppCompatActivity {
+    MainActivity context = this;
+
+    ArrayList<Entry> calEntry = new ArrayList<>();
+    ArrayList<Entry> weightEntry = new ArrayList<>();
+
     @RealmModule(classes = {FoodObject.class})
     public class BundledRealmModule {
 
@@ -49,6 +58,40 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //그래프에 들어갈 좌표값 입력
+        calEntry.add(new Entry(1, 2000));
+        calEntry.add(new Entry(2, 3200));
+        calEntry.add(new Entry(3, 2100));
+        calEntry.add(new Entry(6, 2500));
+
+        weightEntry.add(new Entry(1, 57f));
+        weightEntry.add(new Entry(2, 58f));
+        weightEntry.add(new Entry(5, 60f));
+        weightEntry.add(new Entry(7, 61.2f));
+
+
+        // ViewModel
+        final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
+        // ViewModel Observer
+        viewModel.alarmList.observe(this, new Observer<AlarmListItem>() {
+            @Override
+            public void onChanged(@Nullable AlarmListItem alarm) {
+                // update ui.
+                Toast.makeText(getApplicationContext(), "알람 목록의 변경이 감지되었습니다..", Toast.LENGTH_SHORT).show();
+
+            }
+        });
+        viewModel.calEntry.observe(this, new Observer<ArrayList<Entry>>() {
+            @Override
+            public void onChanged(ArrayList<Entry> entries) {
+                calEntry = entries;
+                setChartData();
+
+            }
+        });
+
+
         Realm.init(this);
 
         //ConvertCSVtoRealm();
@@ -153,21 +196,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void AttachMainActivityItems() {
-        final String[] listViewitems = {"호랑이", "토끼", "곰", "돌고래", "지렁이",
-                "굴", "땃쥐", "뱁새"};
+        String[] listViewitems = {"호랑이", "곰"};
         final ArrayList<AlarmListItem> list = new ArrayList<AlarmListItem>();
-        for (String item : listViewitems) {
-            AlarmListItem listitem = new AlarmListItem();
-            listitem.setName(item);
-            listitem.setTime(12, 12, 00);
-            listitem.setUse(true);
 
-            list.add(listitem);
-        }
+        AlarmListItem listitem1 = new AlarmListItem();
+        listitem1.setName(listViewitems[0]);
+        listitem1.setTime(12, 12, 00);
+        listitem1.setUse(true);
+        list.add(listitem1);
+        AlarmListItem listitem2 = new AlarmListItem();
+        listitem2.setName(listViewitems[1]);
+        listitem2.setTime(6, 43, 00);
+        listitem2.setUse(true);
+        list.add(listitem2);
 
         RecyclerView AlarmList = (RecyclerView) findViewById(R.id.AlarmList);
 
-        // 리사이클러뷰에 SimpleTextAdapter 객체 지정.
+        // 리사이클러뷰에 Adapter 객체 지정.
         final AlarmListAdaper adapter = new AlarmListAdaper(list);
         AlarmList.setAdapter(adapter);
         // 구분선
@@ -177,12 +222,9 @@ public class MainActivity extends AppCompatActivity {
         AlarmList.setLayoutManager(new LinearLayoutManager(this));
 
         ImageButton addAlarmButton = (ImageButton) findViewById(R.id.CardHeaderAdd);
-        addAlarmButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                AlarmAddOrUpdateDialog aldial = new AlarmAddOrUpdateDialog(view.getContext(), adapter, list);
-                aldial.show();
-            }
+        addAlarmButton.setOnClickListener(view -> {
+            AlarmAddOrUpdateDialog aldial = new AlarmAddOrUpdateDialog(view.getContext(), adapter, list);
+            aldial.show();
         });
 
         // WorkManager 테스트용
@@ -194,53 +236,75 @@ public class MainActivity extends AppCompatActivity {
                 .putString("name", "123")
                 .build();
         */
-        PeriodicWorkRequest saveRequest =
-                new PeriodicWorkRequest.Builder(AlarmWorker.class, 1, TimeUnit.DAYS)
-                        // 작업을 식별하는데 사용하는 태그 지정
-                        .addTag("테그")
-                        // 입력 데이터 할당. 값은 Data 객체에 Key-Value 쌍으로 저장된다
-                        //.setInputData(mData)
-                        // 특정 시간에 시작하는 함수가 없으므로 지연을 사용하여 시작 시간을 설정해야 한다.
-                        //.setInitialDelay(5, TimeUnit.SECONDS)
-                        /*
-                        .setBackoffCriteria(
-                                BackoffPolicy.LINEAR,
-                                30,
-                                TimeUnit.MINUTES
-                        )*/
-                        .build();
 
-        PeriodicWorkRequest saveRequest2 =
-                new PeriodicWorkRequest.Builder(AlarmWorker.class, 1, TimeUnit.DAYS)
+        WorkManager workManager = WorkManager.getInstance(getApplicationContext());
+        workManager.cancelAllWork();
+
+        PeriodicWorkRequest saveRequest =
+                new PeriodicWorkRequest.Builder(AlarmWorker.class, 15, TimeUnit.MINUTES)
                         // 작업을 식별하는데 사용하는 태그 지정
                         .addTag("테그")
                         // 입력 데이터 할당. 값은 Data 객체에 Key-Value 쌍으로 저장된다
                         //.setInputData(mData)
                         // 특정 시간에 시작하는 함수가 없으므로 지연을 사용하여 시작 시간을 설정해야 한다.
-                        .setInitialDelay(15, TimeUnit.SECONDS)
+                        .setInitialDelay(3, TimeUnit.SECONDS)
                         .setBackoffCriteria(
                                 BackoffPolicy.LINEAR,
                                 30,
                                 TimeUnit.MINUTES
                         )
                         .build();
-
+        /*
+        PeriodicWorkRequest saveRequest2 =
+                new PeriodicWorkRequest.Builder(AlarmWorker.class, 1, TimeUnit.DAYS)
+                        // 작업을 식별하는데 사용하는 태그 지정
+                        .addTag("호랑이")
+                        // 입력 데이터 할당. 값은 Data 객체에 Key-Value 쌍으로 저장된다
+                        //.setInputData(mData)
+                        // 특정 시간에 시작하는 함수가 없으므로 지연을 사용하여 시작 시간을 설정해야 한다.
+                        .setInitialDelay(10, TimeUnit.SECONDS)
+                        .setBackoffCriteria(
+                                BackoffPolicy.LINEAR,
+                                30,
+                                TimeUnit.MINUTES
+                        )
+                        .build();
+*/
         //Toast.makeText(getApplicationContext(), saveRequest.getTags().toArray()[1].toString(), Toast.LENGTH_SHORT).show();
 
         // WorkManager 큐에 추가
-        WorkManager
-                .getInstance(getApplicationContext())
-                .enqueue(saveRequest);
-        WorkManager
-                .getInstance(getApplicationContext())
-                .enqueue(saveRequest2);
+        workManager.enqueue(saveRequest);
+        //workManager.enqueue(saveRequest2);
 
         createGraph();
         setChartData();
+        setEvent();
     }
 
     private void setEvent() {
-        // TODO : 칼로리 추가, 몸무게 추가 리스너 추가
+        final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
+
+        // 칼로리 추가
+        findViewById(R.id.addCaloris).setOnClickListener(view -> {
+            CalorieAdderDialog dial = new CalorieAdderDialog(view.getContext());
+            dial.show();
+            boolean isExist = false;
+            for (Entry entry : calEntry) {
+                if (entry.getX() == 10) {
+                    entry.setY(entry.getY() + 10f);
+                    isExist = true;
+                }
+            }
+            if (!isExist) calEntry.add(new Entry(10, 20f));
+            viewModel.calEntry.setValue(calEntry);
+        });
+
+        // 몸무게 추가
+        findViewById(R.id.addWeights).setOnClickListener(view -> {
+            Toast.makeText(getApplicationContext(), "구현중", Toast.LENGTH_SHORT).show();
+            WeightAdderDialog dial = new WeightAdderDialog(view.getContext());
+            dial.show();
+        });
     }
 
     private void createGraph() {
@@ -272,21 +336,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void setChartData() {
         final LineChart chart = findViewById(R.id.chart);
-        chart.animateY(2000);
-
-        ArrayList<Entry> calEntry = new ArrayList<>();
-        ArrayList<Entry> weightEntry = new ArrayList<>();
-
-        //그래프에 들어갈 좌표값 입력
-        calEntry.add(new Entry(1, 2000));
-        calEntry.add(new Entry(2, 3500));
-        calEntry.add(new Entry(3, 2100));
-
-        weightEntry.add(new Entry(1, 57f));
-        weightEntry.add(new Entry(2, 58f));
-        weightEntry.add(new Entry(3, 110f));
-        weightEntry.add(new Entry(5, 61.2f));
-        weightEntry.add(new Entry(31, 71.2f));
+        chart.animateY(1000);
 
         LineDataSet calSet, weightSet;
 
@@ -306,7 +356,7 @@ public class MainActivity extends AppCompatActivity {
             calSet = new LineDataSet(calEntry, "칼로리");
             calSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
             calSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-            myValueFormatter calorieFormatter = new myValueFormatter();
+            MyValueFormatter calorieFormatter = new MyValueFormatter();
             calorieFormatter.setUnit("Kcal");
             calSet.setValueFormatter(calorieFormatter);
             calSet.setCubicIntensity(0.2f);
@@ -331,7 +381,7 @@ public class MainActivity extends AppCompatActivity {
             weightSet = new LineDataSet(weightEntry, "몸무게");
             weightSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
             weightSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
-            myValueFormatter weightFormatter = new myValueFormatter();
+            MyValueFormatter weightFormatter = new MyValueFormatter();
             weightFormatter.setUnit("Kg");
             weightSet.setValueFormatter(weightFormatter);
             weightSet.setCubicIntensity(0.2f);
@@ -367,4 +417,23 @@ public class MainActivity extends AppCompatActivity {
         chart.setVisibleXRangeMaximum(7);
         chart.moveViewToX(chart.getXRange());
     }
+
+
+    // 백 버튼
+    private final long FINISH_INTERVAL_TIME = 2000;
+    private long backPressedTime = 0;
+
+    @Override
+    public void onBackPressed() {
+        long tempTime = System.currentTimeMillis();
+        long intervalTime = tempTime - backPressedTime;
+
+        if ((0 <= intervalTime) && (FINISH_INTERVAL_TIME >= intervalTime)) {
+            finish();
+        } else {
+            backPressedTime = tempTime;
+            Toast.makeText(getApplicationContext(), "한번 더 누르면 종료됩니다.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
 }

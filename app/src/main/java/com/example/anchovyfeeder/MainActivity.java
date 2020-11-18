@@ -70,28 +70,25 @@ public class MainActivity extends AppCompatActivity {
         weightEntry.add(new Entry(5, 60f));
         weightEntry.add(new Entry(7, 61.2f));
 
-
         // ViewModel
         final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
-        // ViewModel Observer
-        viewModel.alarmList.observe(this, new Observer<AlarmListItem>() {
-            @Override
-            public void onChanged(@Nullable AlarmListItem alarm) {
-                // update ui.
-                Toast.makeText(getApplicationContext(), "알람 목록의 변경이 감지되었습니다..", Toast.LENGTH_SHORT).show();
-
-            }
+        // Alarm List Observer
+        viewModel.alarmList.observe(this, alarm -> {
+            Toast
+                .makeText(context, "알람 목록의 변경이 감지되었습니다..", Toast.LENGTH_SHORT)
+                .show();
         });
-        viewModel.calEntry.observe(this, new Observer<ArrayList<Entry>>() {
-            @Override
-            public void onChanged(ArrayList<Entry> entries) {
-                calEntry = entries;
-                setChartData();
+        // Chart Data Observer
+        viewModel.calEntry.observe(this, entries -> {
+            calEntry = entries;
+            setChartData();
 
-            }
         });
-
-
+        viewModel.weightEntry.observe(this, entries -> {
+            weightEntry = entries;
+            setChartData();
+        });
+        // Realm Database Initialization
         Realm.init(this);
 
         //ConvertCSVtoRealm();

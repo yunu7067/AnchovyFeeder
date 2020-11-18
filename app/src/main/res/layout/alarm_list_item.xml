@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center"
     android:background="#000F"
+    android:gravity="center"
+    android:orientation="horizontal"
     android:paddingStart="0dp"
     android:paddingEnd="3dp">
 
@@ -15,7 +14,8 @@
         android:id="@+id/alarm_checkBox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="0"/>
+        android:layout_weight="0"
+        tools:text=" " />
 
     <TextView
         android:id="@+id/alarm_editTextTime"
@@ -30,21 +30,21 @@
         android:id="@+id/alarm_textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:textSize="18sp"
         android:layout_marginEnd="10dp"
-        tools:text="알람 제목"
-        android:text="" />
+        android:layout_weight="1"
+        android:text=""
+        android:textSize="18sp"
+        tools:text="알람 제목" />
 
     <ImageButton
         android:id="@+id/alarm_imageButton_edit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="5dp"
         android:layout_weight="0"
         android:background="#FFFF"
-        android:layout_marginEnd="5dp"
-        app:srcCompat="@drawable/ic_baseline_edit_24"
-        android:contentDescription="@string/edit_item_desc" />
+        android:contentDescription="@string/edit_item_desc"
+        app:srcCompat="@drawable/ic_baseline_edit_24" />
 
     <ImageButton
         android:id="@+id/alarm_imageButton_delete"
@@ -52,6 +52,6 @@
         android:layout_height="wrap_content"
         android:layout_weight="0"
         android:background="#FFFF"
-        app:srcCompat="@drawable/ic_baseline_delete_24"
-        android:contentDescription="@string/delete_item_desc" />
+        android:contentDescription="@string/delete_item_desc"
+        app:srcCompat="@drawable/ic_baseline_delete_24" />
 </LinearLayout>

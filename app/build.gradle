@@ -15,6 +15,8 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    dataBinding { enabled = true }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -44,23 +46,23 @@ dependencies {
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 
     def work_version = "2.4.0"
-        implementation "androidx.work:work-runtime:$work_version"
-        androidTestImplementation "androidx.work:work-testing:$work_version"
+    implementation "androidx.work:work-runtime:$work_version"
+    androidTestImplementation "androidx.work:work-testing:$work_version"
 
     def lifecycle_version = "2.2.0"
     def arch_version = "2.1.0"
-        // ViewModel
-        implementation "androidx.lifecycle:lifecycle-viewmodel:$lifecycle_version"
-        // LiveData
-        implementation "androidx.lifecycle:lifecycle-livedata:$lifecycle_version"
-        // Saved state module for ViewModel
-        implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycle_version"
-        // Annotation processor
-        annotationProcessor "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
-        // alternately - if using Java8, use the following instead of lifecycle-compiler
-        implementation "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
-        // optional - Test helpers for LiveData
-        testImplementation "androidx.arch.core:core-testing:$arch_version"
+    // ViewModel
+    implementation "androidx.lifecycle:lifecycle-viewmodel:$lifecycle_version"
+    // LiveData
+    implementation "androidx.lifecycle:lifecycle-livedata:$lifecycle_version"
+    // Saved state module for ViewModel
+    implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycle_version"
+    // Annotation processor
+    annotationProcessor "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
+    // alternately - if using Java8, use the following instead of lifecycle-compiler
+    implementation "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
+    // optional - Test helpers for LiveData
+    testImplementation "androidx.arch.core:core-testing:$arch_version"
     // test
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'

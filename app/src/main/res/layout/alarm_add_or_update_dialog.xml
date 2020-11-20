@@ -58,6 +58,8 @@
                     android:id="@+id/alarm_dialog_alarm_name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+
+                    android:inputType="text"
                     android:hint="@string/alarm_dialog_alarm_name_hint"
                     android:maxLength="10" />
             </com.google.android.material.textfield.TextInputLayout>

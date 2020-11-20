@@ -1,4 +1,4 @@
-package com.example.anchovyfeeder;
+package com.example.anchovyfeeder.realmdb;
 
 import androidx.annotation.Nullable;
 

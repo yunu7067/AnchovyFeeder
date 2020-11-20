@@ -41,53 +41,42 @@
             android:tint="@android:color/white" />
     </LinearLayout>
 
+    <DatePicker
+        android:id="@+id/datePicker"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:calendarViewShown="false"
+        android:datePickerMode="spinner"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/dialog_header_layout" />
+
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/textInputLayout"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:backgroundTint="@color/colorLine2Pressed"
         android:paddingHorizontal="20dp"
-        android:paddingTop="15dp"
-        android:paddingBottom="0dp"
+        android:paddingVertical="0dp"
         app:boxStrokeColor="@color/colorLine2Pressed"
-        app:layout_constraintTop_toBottomOf="@+id/dialog_header_layout">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_chainStyle="spread_inside"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/datePicker"
+        app:startIconDrawable="@drawable/ic_baseline_accessibility_new_24"
+        app:suffixText="Kg">
 
         <com.google.android.material.textfield.TextInputEditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorLine2Pressed"
+            android:maxLength="6"
             android:hint="몸무게를 입력하세요"
-            tools:text="핫바" />
+            android:inputType="numberDecimal"
+            tools:text="66" />
 
     </com.google.android.material.textfield.TextInputLayout>
-
-    <EditText
-        android:id="@+id/editTextNumberDecimal"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:backgroundTint="@color/colorLine2Pressed"
-        android:ems="10"
-        android:inputType="numberDecimal"
-        android:textAlignment="textEnd"
-        app:layout_constraintEnd_toStartOf="@+id/unit"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintHorizontal_chainStyle="spread_inside"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textInputLayout"
-        tools:text="123123" />
-
-    <TextView
-        android:id="@+id/unit"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="20dp"
-        android:text="Kg"
-        app:layout_constraintBottom_toTopOf="@+id/spacer"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/editTextNumberDecimal"
-        app:layout_constraintTop_toBottomOf="@+id/textInputLayout"
-        app:layout_constraintVertical_bias="0.5" />
 
     <Space
         android:id="@+id/spacer"
@@ -95,7 +84,7 @@
         android:layout_height="5dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextNumberDecimal" />
+        app:layout_constraintTop_toBottomOf="@+id/textInputLayout" />
 
     <Button
         android:id="@+id/dialog_save_button"

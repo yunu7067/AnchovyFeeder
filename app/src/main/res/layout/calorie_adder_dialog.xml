@@ -41,21 +41,32 @@
             android:tint="@android:color/white" />
     </LinearLayout>
 
+    <DatePicker
+        android:id="@+id/datePicker"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:calendarViewShown="false"
+        android:datePickerMode="spinner"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/dialog_header_layout" />
+
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/textInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:backgroundTint="@color/colorLine1Pressed"
         android:paddingHorizontal="20dp"
-        android:paddingTop="15dp"
-        android:paddingBottom="0dp"
+        android:paddingVertical="0dp"
         app:boxStrokeColor="@color/colorLine1Pressed"
-        app:layout_constraintTop_toBottomOf="@+id/dialog_header_layout">
+        app:layout_constraintTop_toBottomOf="@+id/datePicker"
+        app:startIconDrawable="@drawable/ic_baseline_fastfood_24">
 
         <com.google.android.material.textfield.TextInputEditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorLine1Pressed"
+            android:inputType="text"
             android:hint="음식 이름을 입력하세요"
             tools:text="핫바" />
 
@@ -68,8 +79,10 @@
         android:layout_marginStart="20dp"
         android:backgroundTint="@color/colorLine1Pressed"
         android:ems="10"
+        android:maxLines="1"
         android:inputType="numberDecimal"
         android:textAlignment="textEnd"
+        android:maxLength="5"
         app:layout_constraintEnd_toStartOf="@+id/unit"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintHorizontal_chainStyle="spread_inside"

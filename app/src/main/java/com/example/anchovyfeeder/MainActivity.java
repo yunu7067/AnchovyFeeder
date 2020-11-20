@@ -4,21 +4,26 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ImageButton;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.Observer;
+import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.work.BackoffPolicy;
-import androidx.work.PeriodicWorkRequest;
+import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
 
+import com.example.anchovyfeeder.databinding.ActivityMainBinding;
+import com.example.anchovyfeeder.realmdb.FoodObject;
+import com.example.anchovyfeeder.realmdb.WeightObject;
+import com.example.anchovyfeeder.realmdb.utils.DateCalculator;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
@@ -32,27 +37,44 @@ import com.opencsv.CSVReader;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
+import io.realm.OrderedCollectionChangeSet;
+import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+import io.realm.RealmResults;
 import io.realm.annotations.RealmModule;
 
-//MPAndroidChart import
+/*
+ * TODO [ 예정 ]
+ *   날짜가 변경되면 자동으로 WorkManager 알람 다시 Request하기
+ *   알람 오면 소리나 진동 같이 울리게
+ *   알람 오고 미루기 누르면 알림에 보여주기
+ *   누르면 바로 알람창 다시 띄우기
+ *   칼로리는 1:n, 몸무게는 1:1
+ *
+ * TODO [ 진행중 ]
+ * */
 
 public class MainActivity extends AppCompatActivity {
     MainActivity context = this;
-
+    ActivityMainBinding binding;
+    ArrayList<AlarmListItem> alarmList = new ArrayList<AlarmListItem>();
     ArrayList<Entry> calEntry = new ArrayList<>();
     ArrayList<Entry> weightEntry = new ArrayList<>();
+    DateCalculator dateCalculator = new DateCalculator();
 
     @RealmModule(classes = {FoodObject.class})
     public class BundledRealmModule {
-
     }
+
+    Realm myRealm;
+    RealmConfiguration myRealmConfig;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,31 +92,75 @@ public class MainActivity extends AppCompatActivity {
         weightEntry.add(new Entry(5, 60f));
         weightEntry.add(new Entry(7, 61.2f));
 
-        // ViewModel
+        // ViewModel Data binding
+        binding = DataBindingUtil.setContentView(context, R.layout.activity_main);
         final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
+        binding.setViewModel(viewModel);
+        binding.setLifecycleOwner(context);
+
         // Alarm List Observer
-        viewModel.alarmList.observe(this, alarm -> {
-            Toast
-                .makeText(context, "알람 목록의 변경이 감지되었습니다..", Toast.LENGTH_SHORT)
-                .show();
+        viewModel.alarmList.observe(this, alarmList -> {
+            Toast.makeText(context, "알람 재설정", Toast.LENGTH_SHORT).show();
+            this.alarmList = alarmList;
+            resetAlarm();
+            saveAlarmListInRealm();
         });
         // Chart Data Observer
         viewModel.calEntry.observe(this, entries -> {
             calEntry = entries;
             setChartData();
-
         });
         viewModel.weightEntry.observe(this, entries -> {
             weightEntry = entries;
             setChartData();
         });
+
+
         // Realm Database Initialization
-        Realm.init(this);
+        if (!initRealm())
+            Toast.makeText(context, "데이터베이스 로드 실패", Toast.LENGTH_SHORT).show();
+
+        // Realm Object Observer
+        viewModel.weightsThisMonth.addChangeListener((results) -> {
+            Log.i("시발", "변경감지!!!!!!!! + " + results.size());
+            //changeSet.getInsertions(); // => [0] is added.
+            ArrayList<Entry> list = new ArrayList<>();
+            RealmResults<WeightObject> temp = results.sort("DATE");
+            for (WeightObject item : temp) {
+                list.add(item.getEntry());
+            }
+            weightEntry = list;
+            setChartData();
+        });
 
         //ConvertCSVtoRealm();
-        LoadRealmAndView();
-        //CreateOrLoadAlarmListByRealm();
-        AttachMainActivityItems();
+        loadFoodRealFile();
+        initComponents();
+    }
+
+    private boolean initRealm() {
+        try {
+            Realm.init(context);
+            myRealmConfig = new RealmConfiguration.Builder().name("userdata.realm").build();
+            Realm.setDefaultConfiguration(myRealmConfig);
+            myRealm = Realm.getDefaultInstance();
+            loadAlarmListInRealm();
+            loadWeightsInRealm();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean resetRealm() {
+        try {
+            if (!myRealm.isClosed())
+                myRealm.close();
+            Realm.deleteRealm(myRealmConfig);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public void ConvertCSVtoRealm() {
@@ -145,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void LoadRealmAndView() {
+    public void loadFoodRealFile() {
         RealmConfiguration config = new RealmConfiguration.Builder()
                 .assetFile("default.realm")
                 .readOnly()
@@ -156,9 +222,8 @@ public class MainActivity extends AppCompatActivity {
 
         TextView tv = (TextView) findViewById(R.id.textarea);
         tv.append("Realm 테스트\n");
-        FoodObject fo = mRealm.where(FoodObject.class)
-                .contains("FOOD_NAME", "홍차")
-                .findFirst();
+        MainViewModel.foodsRealm = mRealm.where(FoodObject.class).findAll();
+        FoodObject fo = MainViewModel.foodsRealm.where().contains("FOOD_NAME", "홍차").findFirst();
         if (fo != null) {
             //vo2.deleteFromRealm();
             tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
@@ -167,115 +232,167 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void CreateOrLoadAlarmListByRealm() {
-        final Realm mRealm;
-        RealmConfiguration config = new RealmConfiguration.Builder()
-                .name("userdatas.realm")
-                .modules(new BundledRealmModule())
-                .build();
-
-        mRealm = Realm.getInstance(config);
-
-        mRealm.executeTransaction(
-                new Realm.Transaction() {
-                    @Override
-                    public void execute(Realm realm) {
-                        AlarmObject ao = realm.createObject(AlarmObject.class);
-                        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-
-                        //ao.setALARM_TIME();
-                        ao.setALARM_TITLE("아침");
-                        ao.setIS_USING(true);
-                        mRealm.insert(ao);
-                    }
-                }
-        );
+    /**
+     * Realm 데이터베이스에서 AlarmListItem를 전부 불러온 후, ArrayList 형식으로 변환하여 ViewModel의 AlarmList 객체에 저장한다.
+     */
+    private void loadAlarmListInRealm() {
+        android.util.Log.i("loadAlarmListReam()", "알람 목록 불러오기 시작");
+        alarmList.clear();
+        myRealm.executeTransaction(_realm -> {
+            RealmResults<AlarmListItem> results = _realm.where(AlarmListItem.class).findAll();
+            if (!results.isEmpty())
+                alarmList.addAll(_realm.copyFromRealm(results));
+            android.util.Log.i("loadAlarmListReam()", "총 " + alarmList.size() + "개 불러옴");
+        });
+        android.util.Log.i("loadAlarmListReam()", "알람 목록 불러오기 종료");
     }
 
-    public void AttachMainActivityItems() {
-        String[] listViewitems = {"호랑이", "곰"};
-        final ArrayList<AlarmListItem> list = new ArrayList<AlarmListItem>();
-
-        AlarmListItem listitem1 = new AlarmListItem();
-        listitem1.setName(listViewitems[0]);
-        listitem1.setTime(12, 12, 00);
-        listitem1.setUse(true);
-        list.add(listitem1);
-        AlarmListItem listitem2 = new AlarmListItem();
-        listitem2.setName(listViewitems[1]);
-        listitem2.setTime(6, 43, 00);
-        listitem2.setUse(true);
-        list.add(listitem2);
-
-        RecyclerView AlarmList = (RecyclerView) findViewById(R.id.AlarmList);
-
-        // 리사이클러뷰에 Adapter 객체 지정.
-        final AlarmListAdaper adapter = new AlarmListAdaper(list);
-        AlarmList.setAdapter(adapter);
-        // 구분선
-        AlarmList.addItemDecoration(new DividerItemDecoration(
-                getApplicationContext(), DividerItemDecoration.VERTICAL)
-        );
-        AlarmList.setLayoutManager(new LinearLayoutManager(this));
-
-        ImageButton addAlarmButton = (ImageButton) findViewById(R.id.CardHeaderAdd);
-        addAlarmButton.setOnClickListener(view -> {
-            AlarmAddOrUpdateDialog aldial = new AlarmAddOrUpdateDialog(view.getContext(), adapter, list);
-            aldial.show();
+    /**
+     * AlarmList(ArrayList 타입)을 RealmObject 으로 변환하여 Realm 데이터베이스에 저장한다.
+     */
+    private void saveAlarmListInRealm() {
+        android.util.Log.i("saveAlarmListReam()", "알람 목록 저장 시작");
+        myRealm.executeTransaction(_realm -> {
+            _realm.delete(AlarmListItem.class);
+            _realm.copyToRealm(alarmList);
         });
+        android.util.Log.i("saveAlarmListReam()", "알람 목록 저장 종료");
+    }
 
-        // WorkManager 테스트용
-        // https://developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work?hl=ko#schedule_periodic_work
-        // PeriodicWorkRequest를 이용하여 주기적으로 실행되는 WorkRequest 객체를 생성 (1일 간격)
+    /**
+     * Realm 데이터베이스에 있는 WeightObject를 전부 불러온 후 ViewModel에 바인드한다.
+     */
+    private void loadWeightsInRealm() {
+        myRealm.executeTransaction(_realm -> {
+            MainViewModel.weightsThisMonth = _realm.where(WeightObject.class)
+                    .findAll();
+        });
+    }
 
-        /*
-        Data mData = new Data.Builder()
-                .putString("name", "123")
-                .build();
-        */
 
-        WorkManager workManager = WorkManager.getInstance(getApplicationContext());
-        workManager.cancelAllWork();
+    public void initComponents() {
+        // AlarmList CardView
+        {
+            MainViewModel.setAlarmList(alarmList);
 
-        PeriodicWorkRequest saveRequest =
-                new PeriodicWorkRequest.Builder(AlarmWorker.class, 15, TimeUnit.MINUTES)
-                        // 작업을 식별하는데 사용하는 태그 지정
-                        .addTag("테그")
-                        // 입력 데이터 할당. 값은 Data 객체에 Key-Value 쌍으로 저장된다
-                        //.setInputData(mData)
-                        // 특정 시간에 시작하는 함수가 없으므로 지연을 사용하여 시작 시간을 설정해야 한다.
-                        .setInitialDelay(3, TimeUnit.SECONDS)
-                        .setBackoffCriteria(
-                                BackoffPolicy.LINEAR,
-                                30,
-                                TimeUnit.MINUTES
-                        )
-                        .build();
-        /*
-        PeriodicWorkRequest saveRequest2 =
-                new PeriodicWorkRequest.Builder(AlarmWorker.class, 1, TimeUnit.DAYS)
-                        // 작업을 식별하는데 사용하는 태그 지정
-                        .addTag("호랑이")
-                        // 입력 데이터 할당. 값은 Data 객체에 Key-Value 쌍으로 저장된다
-                        //.setInputData(mData)
-                        // 특정 시간에 시작하는 함수가 없으므로 지연을 사용하여 시작 시간을 설정해야 한다.
-                        .setInitialDelay(10, TimeUnit.SECONDS)
-                        .setBackoffCriteria(
-                                BackoffPolicy.LINEAR,
-                                30,
-                                TimeUnit.MINUTES
-                        )
-                        .build();
-*/
-        //Toast.makeText(getApplicationContext(), saveRequest.getTags().toArray()[1].toString(), Toast.LENGTH_SHORT).show();
+            RecyclerView AlarmList = findViewById(R.id.AlarmList);
 
-        // WorkManager 큐에 추가
-        workManager.enqueue(saveRequest);
-        //workManager.enqueue(saveRequest2);
+            // 리사이클러뷰에 Adapter 객체 지정.
+            final AlarmListAdaper adapter = new AlarmListAdaper(alarmList);
+            AlarmList.setAdapter(adapter);
+            // 아이템간 구분선
+            AlarmList.addItemDecoration(new DividerItemDecoration(
+                    getApplicationContext(), DividerItemDecoration.VERTICAL)
+            );
+            AlarmList.setLayoutManager(new LinearLayoutManager(this));
 
-        createGraph();
-        setChartData();
+            ImageButton addAlarmButton = findViewById(R.id.CardHeaderAdd);
+            addAlarmButton.setOnClickListener(view -> {
+                //Toast.makeText(view.getContext(), "알람 목록(현재" + alarmList.size() + "개)", Toast.LENGTH_SHORT).show();
+                AlarmAddOrUpdateDialog aldial = new AlarmAddOrUpdateDialog(view.getContext(), adapter, alarmList);
+                aldial.show();
+            });
+        }
+
+        // Chart CardView
+        {
+            Spinner spinner = findViewById(R.id.chartTypeSpinner);
+            TextView chartDescTextView = findViewById(R.id.chartDesc);
+            spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long id) {
+                    String[] descs = getResources().getStringArray(R.array.chart_type_desc_array);
+                    String selectedType = adapterView.getItemAtPosition(pos).toString();
+                    ArrayList<Entry> list = new ArrayList<Entry>();
+                    MyValueFormatter fomatter = new MyValueFormatter();
+                    XAxis xAxis = ((LineChart) findViewById(R.id.chart)).getXAxis();
+                    fomatter.setDecimalFormat("##0");
+
+                    android.util.Log.i("chartTypeSpinner", "Value (" + selectedType + ") ");
+
+                    if ("일별".equals(selectedType)) {
+                        Date[] dates = dateCalculator.getFirstAndLastDayOfMonth();
+                        fomatter.setUnit("일");
+                        // WeightList 설정
+                        RealmResults<WeightObject> results =
+                                MainViewModel.weightsThisMonth.where().between("DATE", dates[0], dates[1]).findAll().sort("DATE");
+                        for (WeightObject item : results) {
+                            list.add(item.getEntry());
+                        }
+                        // CalorieList 설정
+
+                    } else if ("주별".equals(selectedType)) {
+                        Date[] dates = dateCalculator.getLastAndNext3WeekOfNow();
+                        fomatter.setUnit("주 전");
+                        // WeightList 설정
+                        RealmResults<WeightObject> results =
+                                MainViewModel.weightsThisMonth.where().between("DATE", dates[0], dates[1]).findAll().sort("DATE");
+                        int week = -6;
+                        for (int i = 0; i < 7; i++) {
+                            float avgWeight = (float) MainViewModel.weightsThisMonth.where().between("DATE", dates[i * 2], dates[i * 2 + 1]).average("WEIGHT");
+                            if (avgWeight > 0.0) {
+                                list.add(new Entry(week, avgWeight));
+                            }
+                            week++;
+                        }
+                        // CalorieList 설정
+
+                    } else if ("분기별".equals(selectedType)) {
+
+
+                    }
+
+                    xAxis.setValueFormatter(fomatter);
+                    chartDescTextView.setText(descs[pos]);
+                    MainViewModel.weightEntry.setValue(list);
+
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> adapterView) {
+
+                }
+            });
+            createGraph();
+            setChartData();
+        }
+
         setEvent();
+    }
+
+    private void resetAlarm() {
+        WorkManager workManager = WorkManager.getInstance(context);
+        workManager.cancelAllWork();
+        Calendar nowCalendar = Calendar.getInstance();
+        nowCalendar.setTime(new Date(System.currentTimeMillis()));
+        int nowHour = nowCalendar.get(Calendar.HOUR_OF_DAY);
+        int nowMinute = nowCalendar.get(Calendar.MINUTE);
+        int nowSecond = nowCalendar.get(Calendar.SECOND);
+        int delaySecond = 0;
+
+        for (AlarmListItem item : alarmList) {
+            // 현재 시간 이전에 있는 아이템은 큐에 추가 안함
+            //android.util.Log.i("WorkManager Request", nowHour + "<->" + item.getHour());
+            //android.util.Log.i("WorkManager Request", nowMinute + "<->" + item.getMinute());
+            if (item.getHour() < nowHour) {
+                // 알람 시간이 현재시간보다 작으면 무조건 건너뀜
+                //android.util.Log.i("WorkManager Request", "Skip1");
+                continue;
+            } else if ((item.getHour() == nowHour) && (item.getMinute() <= nowMinute)) {
+                // 알람 시각이 현재 시각과 같고, 알람 분이 현재 분보다 작거나 같을 때 건너뜀
+                //android.util.Log.i("WorkManager Request", "Skip2");
+                continue;
+            }
+            delaySecond = (item.getHour() - nowHour) * 60 * 60 + (item.getMinute() - nowMinute) * 60 - nowSecond;
+            // Request 생성
+            WorkRequest dealyWorkRequest = new OneTimeWorkRequest.Builder(AlarmWorker.class)
+                    .setInitialDelay(delaySecond, TimeUnit.SECONDS)
+                    .addTag(item.getName())
+                    .build();
+            // WorkManager 큐에 추가
+            workManager.enqueue(dealyWorkRequest);
+            android.util.Log.i("WorkManager Request", "Delay(" + delaySecond + "초), Tag(" + item.getName() + ") ");
+        }
     }
 
     private void setEvent() {
@@ -292,13 +409,14 @@ public class MainActivity extends AppCompatActivity {
                     isExist = true;
                 }
             }
-            if (!isExist) calEntry.add(new Entry(10, 20f));
+            if (!isExist)
+                calEntry.add(new Entry(10, 20f));
             viewModel.calEntry.setValue(calEntry);
         });
 
         // 몸무게 추가
         findViewById(R.id.addWeights).setOnClickListener(view -> {
-            Toast.makeText(getApplicationContext(), "구현중", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(getApplicationContext(), "구현중", Toast.LENGTH_SHORT).show();
             WeightAdderDialog dial = new WeightAdderDialog(view.getContext());
             dial.show();
         });
@@ -310,6 +428,10 @@ public class MainActivity extends AppCompatActivity {
         myChart.getDescription().setEnabled(false);
 
         XAxis xAxis = myChart.getXAxis();
+        MyValueFormatter vf = new MyValueFormatter();
+        vf.setDecimalFormat("##0");
+        vf.setUnit("일");
+        xAxis.setValueFormatter(vf);
         xAxis.setTextSize(11);
         xAxis.setGranularity(1f);
         xAxis.setGranularityEnabled(true);
@@ -322,7 +444,7 @@ public class MainActivity extends AppCompatActivity {
         leftAxis.setDrawLabels(false);
 
         YAxis rightAxis = myChart.getAxisRight();
-        rightAxis.setAxisMaximum(120f);
+        rightAxis.setAxisMaximum(125f);
         rightAxis.setAxisMinimum(30f);
         rightAxis.setDrawGridLines(false);
         rightAxis.setDrawZeroLine(false);
@@ -334,6 +456,8 @@ public class MainActivity extends AppCompatActivity {
     public void setChartData() {
         final LineChart chart = findViewById(R.id.chart);
         chart.animateY(1000);
+        chart.invalidate();
+        chart.clear();
 
         LineDataSet calSet, weightSet;
 
@@ -348,6 +472,7 @@ public class MainActivity extends AppCompatActivity {
 
             chart.getData().notifyDataChanged();
             chart.notifyDataSetChanged();
+            chart.invalidate();
 
         } else {
             calSet = new LineDataSet(calEntry, "칼로리");
@@ -414,7 +539,6 @@ public class MainActivity extends AppCompatActivity {
         chart.setVisibleXRangeMaximum(7);
         chart.moveViewToX(chart.getXRange());
     }
-
 
     // 백 버튼
     private final long FINISH_INTERVAL_TIME = 2000;

@@ -9,10 +9,14 @@ import java.text.DecimalFormat;
 
 public class MyValueFormatter extends ValueFormatter {
     private DecimalFormat format = new DecimalFormat("###,##0.#");
-    private String unit = null;
+    private String unit = "";
 
     public void setUnit(String unit) {
         this.unit = " " + unit;
+    }
+
+    public void setDecimalFormat(String format) {
+        this.format = new DecimalFormat(format);
     }
 
     @Override
@@ -28,6 +32,8 @@ public class MyValueFormatter extends ValueFormatter {
 
     @Override
     public String getAxisLabel(float value, AxisBase axis) {
-        return super.getAxisLabel(value, axis);
+        //return super.getAxisLabel(value, axis);
+        value = Math.abs(value);
+        return format.format(value) + unit;
     }
 }

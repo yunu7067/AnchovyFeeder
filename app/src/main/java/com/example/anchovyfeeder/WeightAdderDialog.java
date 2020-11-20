@@ -3,10 +3,17 @@ package com.example.anchovyfeeder;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.ImageButton;
+import android.widget.Button;
+import android.widget.DatePicker;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+
+import com.example.anchovyfeeder.realmdb.WeightObject;
+import com.google.android.material.textfield.TextInputLayout;
+
+import io.realm.Realm;
 
 public class WeightAdderDialog extends Dialog {
 
@@ -19,36 +26,65 @@ public class WeightAdderDialog extends Dialog {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.weight_adder_dialog);
 
-        findViewById(R.id.dialog_header_exit_button).setOnClickListener(v -> {dismiss();});
-        /*
-        final TextInputLayout textInputLayout = findViewById(R.id.alarm_dialog_alarm_name_layout);
-        final TimePicker timePicker = findViewById(R.id.alarm_dialog_time_picker);
-        Button saveButton = findViewById(R.id.alarm_dialog_save_button);
+        findViewById(R.id.dialog_header_exit_button).setOnClickListener(v -> {
+            dismiss();
+        });
+        Button saveButton = findViewById(R.id.dialog_save_button);
 
-        */
+        final TextInputLayout textInputLayout = findViewById(R.id.textInputLayout);
+        final DatePicker datePicker = findViewById(R.id.datePicker);
+        saveButton.setOnClickListener(view -> {
+            String inputText = textInputLayout.getEditText().getText().toString();
+            int selectedYear = datePicker.getYear();
+            int selectedMonth = datePicker.getMonth();
+            int selectedDate = datePicker.getDayOfMonth();
 
-        /*
-        saveButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String toast = textInputLayout.getEditText().getText().toString();
-                if ("".equals(toast)) {
-                    textInputLayout.setError("빈칸이면 안됩니다.");
+            if ("".equals(inputText)) {
+                textInputLayout.setError("빈칸이면 안됩니다.");
+            } else {
+                Double inputWeight = Double.valueOf(inputText);
+                if (inputWeight > 120.0 || inputWeight < 30.0) {
+                    textInputLayout.setError("30Kg ~ 120Kg까지 지원됩니다.");
                 } else {
-                    AlarmListItem item = (mPos >= 0) ? (mData.get(mPos)) : (new AlarmListItem());
-                    item.setName(toast);
-                    item.setTime(timePicker.getHour(), timePicker.getMinute(), 00);
-                    if(mPos < 0)
-                        mData.add(item);
-                    //toast += ", HH : " + timePicker.getHour() + ", MM : " + timePicker.getMinute();
-                    //Toast.makeText(view.getContext(), toast, Toast.LENGTH_SHORT).show();
-                    Toast.makeText(view.getContext(), "설정되었습니다.", Toast.LENGTH_SHORT).show();
+                    WeightObject weight = new WeightObject();
+                    weight.set(selectedYear, selectedMonth, selectedDate, inputWeight);
+                    // TODO : 이하 Realm DB에 데이터 검사 후 입력
+                    WeightObject temp = MainViewModel.weightsThisMonth.where().equalTo("DATE", weight.getDATE()).findFirst();
+                    android.util.Log.i("WeightAdderDialog()", "1 " + selectedYear + "/" + selectedMonth + "/" + selectedDate);
 
-                    mAdapter.notifyDataSetChanged();
-                    dismiss();
+                    if (temp == null) {
+                        android.util.Log.i("WeightAdderDialog()", "2-1");
+
+                        Realm realm = MainViewModel.weightsThisMonth.getRealm();
+                        realm.beginTransaction();
+                        WeightObject wit = realm.copyToRealm(weight);
+                        realm.commitTransaction();
+                        dismiss();
+                    } else {
+                        android.util.Log.i("WeightAdderDialog()", "2-2");
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                        // 취소 버튼 클릭시 설정, 왼쪽 버튼입니다.
+                        builder.setTitle("해당 날짜에 이미 저장된 몸무게가 있습니다.")
+                                .setMessage("덮어씌우시겠습니까?")
+                                .setCancelable(false)
+                                .setPositiveButton("확인", (dialog, whichButton) -> {
+                                    Realm realm = MainViewModel.weightsThisMonth.getRealm();
+                                    realm.beginTransaction();
+                                    temp.setWEIGHT(inputWeight);
+                                    realm.commitTransaction();
+                                    dismiss();
+                                })
+                                .setNegativeButton("취소",  null);
+                        AlertDialog dialog = builder.create();    // 알림창 객체 생성
+                        dialog.show();    // 알림창 띄우기
+                    }
+                    Toast.makeText(view.getContext(), weight.getDATE() + ", " + weight.getWEIGHT() + "Kg", Toast.LENGTH_SHORT).show();
+
+
                 }
             }
-        });*/
+        });
     }
 
 }

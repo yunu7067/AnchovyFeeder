@@ -30,52 +30,13 @@ public class CalorieAdderDialog extends Dialog {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.calorie_adder_dialog);
 
-        TextInputLayout text = (TextInputLayout) findViewById(R.id.textInputLayout);
-
-        findViewById(R.id.dialog_header_exit_button).setOnClickListener(v -> {dismiss();});
-        //text.setBoxStrokeColor(ContextCompat.getColor(this.getContext(), R.color.colorLine1Pressed));
-
-        //Color from rgb
-        //int color = ContextCompat.getColor(this.getContext(), R.color.colorLine1Pressed);
-
-        int color = Color.parseColor("#03A9F4");
-
-        int[][] states = new int[][] {
-                new int[] { android.R.attr.state_focused}, // focused
-                new int[] { android.R.attr.state_hovered}, // hovered
-                new int[] { android.R.attr.state_enabled}, // enabled
-        };
-
-        int[] colors = new int[] {
-                color,
-                color,
-                color,
-        };
-
-        text.setBoxStrokeColorStateList(new ColorStateList(states, colors));
-
-
-
-
-
-
-
-
+        findViewById(R.id.dialog_header_exit_button).setOnClickListener(view -> {dismiss();});
+        TextInputLayout textInputLayout = findViewById(R.id.textInputLayout);
 
         /*ImageButton exitButton = findViewById(R.id.alarm_dialog_alarm_exit_button);
         final TextInputLayout textInputLayout = findViewById(R.id.alarm_dialog_alarm_name_layout);
         final TimePicker timePicker = findViewById(R.id.alarm_dialog_time_picker);
         Button saveButton = findViewById(R.id.alarm_dialog_save_button);
-
-
-
-        exitButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //Toast.makeText(view.getContext(), "종료", Toast.LENGTH_SHORT).show();
-                dismiss();
-            }
-        });
 
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override

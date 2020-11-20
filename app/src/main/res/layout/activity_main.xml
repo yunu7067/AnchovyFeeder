@@ -1,46 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <LinearLayout
+    <data>
+
+        <variable
+            name="viewModel"
+            type="com.example.anchovyfeeder.MainViewModel" />
+    </data>
+
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:orientation="vertical">
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
 
-        <include
-            android:id="@+id/Alarm"
-            layout="@layout/components_alarm_list_card_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <include
-            android:id="@+id/FoodRecommender"
-            layout="@layout/components_food_recommender_card_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <include
-            android:id="@+id/Graph"
-            layout="@layout/components_graph_card_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-
-        <TextView
-            android:id="@+id/textarea"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_weight="0"
-            android:padding="5dp"
-            android:text="" />
+            android:layout_margin="5dp"
+            android:orientation="vertical">
 
-    </LinearLayout>
+            <include
+                android:id="@+id/Alarm"
+                layout="@layout/components_alarm_list_card_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
-</ScrollView>
+            <include
+                android:id="@+id/FoodRecommender"
+                layout="@layout/components_food_recommender_card_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
+            <include
+                android:id="@+id/Graph"
+                layout="@layout/components_chart_card_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+
+            <TextView
+                android:id="@+id/textarea"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_weight="0"
+                android:padding="5dp"
+                android:text="" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</layout>

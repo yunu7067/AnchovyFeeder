@@ -21,18 +21,16 @@ import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
 
 import com.example.anchovyfeeder.databinding.ActivityMainBinding;
+import com.example.anchovyfeeder.realmdb.DailyDataObject;
 import com.example.anchovyfeeder.realmdb.FoodObject;
-import com.example.anchovyfeeder.realmdb.WeightObject;
 import com.example.anchovyfeeder.realmdb.utils.DateCalculator;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.formatter.IFillFormatter;
-import com.github.mikephil.charting.interfaces.dataprovider.LineDataProvider;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.opencsv.CSVReader;
 
 import java.io.BufferedReader;
@@ -41,10 +39,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
-import io.realm.OrderedCollectionChangeSet;
-import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
@@ -56,7 +51,6 @@ import io.realm.annotations.RealmModule;
  *   알람 오면 소리나 진동 같이 울리게
  *   알람 오고 미루기 누르면 알림에 보여주기
  *   누르면 바로 알람창 다시 띄우기
- *   칼로리는 1:n, 몸무게는 1:1
  *
  * TODO [ 진행중 ]
  * */
@@ -81,23 +75,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //그래프에 들어갈 좌표값 입력
-        calEntry.add(new Entry(1, 2000));
-        calEntry.add(new Entry(2, 3200));
-        calEntry.add(new Entry(3, 2100));
-        calEntry.add(new Entry(6, 2500));
-
-        weightEntry.add(new Entry(1, 57f));
-        weightEntry.add(new Entry(2, 58f));
-        weightEntry.add(new Entry(5, 60f));
-        weightEntry.add(new Entry(7, 61.2f));
-
         // ViewModel Data binding
         binding = DataBindingUtil.setContentView(context, R.layout.activity_main);
         final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
         binding.setViewModel(viewModel);
         binding.setLifecycleOwner(context);
-
         // Alarm List Observer
         viewModel.alarmList.observe(this, alarmList -> {
             Toast.makeText(context, "알람 재설정", Toast.LENGTH_SHORT).show();
@@ -105,32 +87,15 @@ public class MainActivity extends AppCompatActivity {
             resetAlarm();
             saveAlarmListInRealm();
         });
-        // Chart Data Observer
-        viewModel.calEntry.observe(this, entries -> {
-            calEntry = entries;
-            setChartData();
-        });
-        viewModel.weightEntry.observe(this, entries -> {
-            weightEntry = entries;
-            setChartData();
-        });
-
-
         // Realm Database Initialization
         if (!initRealm())
             Toast.makeText(context, "데이터베이스 로드 실패", Toast.LENGTH_SHORT).show();
-
-        // Realm Object Observer
-        viewModel.weightsThisMonth.addChangeListener((results) -> {
-            Log.i("시발", "변경감지!!!!!!!! + " + results.size());
-            //changeSet.getInsertions(); // => [0] is added.
-            ArrayList<Entry> list = new ArrayList<>();
-            RealmResults<WeightObject> temp = results.sort("DATE");
-            for (WeightObject item : temp) {
-                list.add(item.getEntry());
-            }
-            weightEntry = list;
-            setChartData();
+        // Realm Database Observer
+        viewModel.DailyDatas.addChangeListener((results) -> {
+            Log.i("ViewModel.DailyDatas", "변경감지!!!!!!!! + " + results.size());
+            Spinner sp = findViewById(R.id.chartTypeSpinner);
+            Log.i("ViewModel.DailyDatas", "ITEM(" + sp.getSelectedItem().toString() + ")  POS(" + sp.getSelectedItemPosition());
+            refreshChartEntries(sp.getSelectedItem().toString(), sp.getSelectedItemPosition());
         });
 
         //ConvertCSVtoRealm();
@@ -145,7 +110,8 @@ public class MainActivity extends AppCompatActivity {
             Realm.setDefaultConfiguration(myRealmConfig);
             myRealm = Realm.getDefaultInstance();
             loadAlarmListInRealm();
-            loadWeightsInRealm();
+            //loadWeightsInRealm();
+            loadUserDatasInRealm();
             return true;
         } catch (Exception e) {
             return false;
@@ -223,9 +189,11 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = (TextView) findViewById(R.id.textarea);
         tv.append("Realm 테스트\n");
         MainViewModel.foodsRealm = mRealm.where(FoodObject.class).findAll();
-        FoodObject fo = MainViewModel.foodsRealm.where().contains("FOOD_NAME", "홍차").findFirst();
+        FoodObject fo = MainViewModel.foodsRealm.where().like("FOOD_NAME", "ㄱ*").findFirst();
+        //FoodObject fo = MainViewModel.foodsRealm.where().contains("FOOD_NAME", "홍차").findFirst();
         if (fo != null) {
             //vo2.deleteFromRealm();
+            
             tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
         } else {
             tv.append("NULL");
@@ -262,9 +230,15 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Realm 데이터베이스에 있는 WeightObject를 전부 불러온 후 ViewModel에 바인드한다.
      */
-    private void loadWeightsInRealm() {
+   /* private void loadWeightsInRealm() {
         myRealm.executeTransaction(_realm -> {
             MainViewModel.weightsThisMonth = _realm.where(WeightObject.class)
+                    .findAll();
+        });
+    }*/
+    private void loadUserDatasInRealm() {
+        myRealm.executeTransaction(_realm -> {
+            MainViewModel.DailyDatas = _realm.where(DailyDataObject.class)
                     .findAll();
         });
     }
@@ -297,55 +271,11 @@ public class MainActivity extends AppCompatActivity {
         // Chart CardView
         {
             Spinner spinner = findViewById(R.id.chartTypeSpinner);
-            TextView chartDescTextView = findViewById(R.id.chartDesc);
             spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long id) {
-                    String[] descs = getResources().getStringArray(R.array.chart_type_desc_array);
                     String selectedType = adapterView.getItemAtPosition(pos).toString();
-                    ArrayList<Entry> list = new ArrayList<Entry>();
-                    MyValueFormatter fomatter = new MyValueFormatter();
-                    XAxis xAxis = ((LineChart) findViewById(R.id.chart)).getXAxis();
-                    fomatter.setDecimalFormat("##0");
-
-                    android.util.Log.i("chartTypeSpinner", "Value (" + selectedType + ") ");
-
-                    if ("일별".equals(selectedType)) {
-                        Date[] dates = dateCalculator.getFirstAndLastDayOfMonth();
-                        fomatter.setUnit("일");
-                        // WeightList 설정
-                        RealmResults<WeightObject> results =
-                                MainViewModel.weightsThisMonth.where().between("DATE", dates[0], dates[1]).findAll().sort("DATE");
-                        for (WeightObject item : results) {
-                            list.add(item.getEntry());
-                        }
-                        // CalorieList 설정
-
-                    } else if ("주별".equals(selectedType)) {
-                        Date[] dates = dateCalculator.getLastAndNext3WeekOfNow();
-                        fomatter.setUnit("주 전");
-                        // WeightList 설정
-                        RealmResults<WeightObject> results =
-                                MainViewModel.weightsThisMonth.where().between("DATE", dates[0], dates[1]).findAll().sort("DATE");
-                        int week = -6;
-                        for (int i = 0; i < 7; i++) {
-                            float avgWeight = (float) MainViewModel.weightsThisMonth.where().between("DATE", dates[i * 2], dates[i * 2 + 1]).average("WEIGHT");
-                            if (avgWeight > 0.0) {
-                                list.add(new Entry(week, avgWeight));
-                            }
-                            week++;
-                        }
-                        // CalorieList 설정
-
-                    } else if ("분기별".equals(selectedType)) {
-
-
-                    }
-
-                    xAxis.setValueFormatter(fomatter);
-                    chartDescTextView.setText(descs[pos]);
-                    MainViewModel.weightEntry.setValue(list);
-
+                    refreshChartEntries(selectedType, pos);
                 }
 
                 @Override
@@ -353,8 +283,21 @@ public class MainActivity extends AppCompatActivity {
 
                 }
             });
-            createGraph();
+
+            //그래프에 들어갈 좌표값 입력
+            calEntry.add(new Entry(1, 2000));
+            calEntry.add(new Entry(2, 3200));
+            calEntry.add(new Entry(3, 2100));
+            calEntry.add(new Entry(6, 2500));
+
+            weightEntry.add(new Entry(1, 57f));
+            weightEntry.add(new Entry(2, 58f));
+            weightEntry.add(new Entry(5, 60f));
+            weightEntry.add(new Entry(7, 61.2f));
+            initChart();
             setChartData();
+
+
         }
 
         setEvent();
@@ -398,23 +341,12 @@ public class MainActivity extends AppCompatActivity {
     private void setEvent() {
         final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
 
-        // 칼로리 추가
+        // 칼로리 추가 버튼
         findViewById(R.id.addCaloris).setOnClickListener(view -> {
             CalorieAdderDialog dial = new CalorieAdderDialog(view.getContext());
             dial.show();
-            boolean isExist = false;
-            for (Entry entry : calEntry) {
-                if (entry.getX() == 10) {
-                    entry.setY(entry.getY() + 10f);
-                    isExist = true;
-                }
-            }
-            if (!isExist)
-                calEntry.add(new Entry(10, 20f));
-            viewModel.calEntry.setValue(calEntry);
         });
-
-        // 몸무게 추가
+        // 몸무게 추가 버튼
         findViewById(R.id.addWeights).setOnClickListener(view -> {
             //Toast.makeText(getApplicationContext(), "구현중", Toast.LENGTH_SHORT).show();
             WeightAdderDialog dial = new WeightAdderDialog(view.getContext());
@@ -422,43 +354,174 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void createGraph() {
-        LineChart myChart = findViewById(R.id.chart);
-        myChart.setScaleEnabled(false);
-        myChart.getDescription().setEnabled(false);
+    /**
+     * MPChart를 초기화하는 메서드
+     */
+    private void initChart() {
+        LineChart chart = findViewById(R.id.chart);
+        //chart.setViewPortOffsets(0, 0, 0, 0);
 
-        XAxis xAxis = myChart.getXAxis();
+        // no description text
+        chart.getDescription().setEnabled(false);
+
+        // enable touch gestures
+        chart.setTouchEnabled(true);
+
+        // enable scaling and dragging
+        chart.setDragEnabled(true);
+        chart.setScaleEnabled(false);
+
+        // if disabled, scaling can be done on x- and y-axis separately
+        chart.setPinchZoom(false);
+        chart.setDrawGridBackground(false);
+        chart.setMaxHighlightDistance(300);
+
+        //chart.setMaxVisibleValueCount(7);
+
+
+        // 가로축
+        XAxis xAxis = chart.getXAxis();
         MyValueFormatter vf = new MyValueFormatter();
         vf.setDecimalFormat("##0");
         vf.setUnit("일");
         xAxis.setValueFormatter(vf);
         xAxis.setTextSize(11);
-        xAxis.setGranularity(1f);
-        xAxis.setGranularityEnabled(true);
         xAxis.setTextColor(Color.BLACK);
+        //xAxis.setLabelCount(7, true);
         xAxis.setDrawGridLines(true);
         xAxis.setDrawAxisLine(false);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
 
-        YAxis leftAxis = myChart.getAxisLeft();
+        // 세로축 (왼쪽)
+        YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setDrawLabels(false);
 
-        YAxis rightAxis = myChart.getAxisRight();
+        // 세로축 (오른쪽)
+        YAxis rightAxis = chart.getAxisRight();
         rightAxis.setAxisMaximum(125f);
         rightAxis.setAxisMinimum(30f);
         rightAxis.setDrawGridLines(false);
         rightAxis.setDrawZeroLine(false);
         rightAxis.setDrawLabels(false);
         rightAxis.setGranularityEnabled(false);
-        myChart.invalidate();
+
+        chart.getLegend().setEnabled(false);
+
+        chart.animateXY(1000, 1000);
+
+        // 차트 다시 그리기
+        chart.invalidate();
+    }
+
+
+    private void refreshChartEntries(String selectedType, int pos) {
+        String[] descs = getResources().getStringArray(R.array.chart_type_desc_array);
+        ArrayList<Entry> weightList = new ArrayList<Entry>();
+        ArrayList<Entry> calorieList = new ArrayList<Entry>();
+        MyValueFormatter fomatter = new MyValueFormatter();
+
+        LineChart chart = findViewById(R.id.chart);
+        XAxis xAxis = chart.getXAxis();
+        YAxis leftYAxis = chart.getAxisLeft();
+        fomatter.setDecimalFormat("##0");
+
+
+
+        android.util.Log.i("chartTypeSpinner", "Value (" + selectedType + ") ");
+
+        if ("일별".equals(selectedType)) {
+            // 왼쪽 세로축 제한선
+            leftYAxis.removeAllLimitLines();
+            LimitLine ll = new LimitLine(2000f, "성인 여성 일일 권장 칼로리");
+            ll.setLineColor(Color.RED);
+            ll.setLineWidth(4f);
+            ll.setTextColor(Color.BLACK);
+            ll.setTextSize(12f);
+            leftYAxis.addLimitLine(ll);
+            LimitLine ll_man = new LimitLine(2700f, "성인 남성 일일 권장 칼로리");
+            ll.setLineColor(Color.RED);
+            ll.setLineWidth(4f);
+            ll.setTextColor(Color.BLACK);
+            ll.setTextSize(12f);
+            leftYAxis.addLimitLine(ll_man);
+            leftYAxis.removeAllLimitLines();
+
+            Date[] dates = dateCalculator.getFirstAndLastDayOfMonth();
+            fomatter.setUnit("일");
+            RealmResults<DailyDataObject> dailys = MainViewModel.DailyDatas
+                    .where()
+                    .between("DATE", dates[0], dates[1])
+                    .findAll()
+                    .sort("DATE");
+            for (DailyDataObject item : dailys) {
+                if (item.getWEIGHT() > 0.0)
+                    weightList.add(item.getWeightEntry());
+                if (item.getCalorieSum() > 0.0)
+                    calorieList.add(item.getCalorieEntry());
+            }
+            android.util.Log.i("chartTypeSpinner", "Array " + weightList);
+
+        } else if ("주별".equals(selectedType)) {
+            // 왼쪽 세로축 제한선
+            leftYAxis.removeAllLimitLines();
+            android.util.Log.i("개시발진짜좆같은새끼", "count:  " + xAxis.getLabelCount());
+
+
+            Date[] dates = dateCalculator.getLast7WeeksToDates();
+            fomatter.setUnit("주 전");
+            int week = -6;
+            for (int i = 0; i < 6; i++) {
+                RealmResults<DailyDataObject> results = MainViewModel.DailyDatas
+                        .where()
+                        .between("DATE", dates[i * 2], dates[i * 2 + 1])
+                        .findAll()
+                        .sort("DATE");
+                float weightAvg = (float) results.average("WEIGHT");
+                float caloriesSum = 0.0f;
+                for (DailyDataObject item : results) {
+                    caloriesSum += item.getCalorieSum();
+                }
+                if (weightAvg > 0.0)
+                    weightList.add(new Entry(week, weightAvg));
+                if (caloriesSum > 0.0)
+                    calorieList.add(new Entry(week, caloriesSum));
+                week++;
+            }
+            android.util.Log.i("chartTypeSpinner", "Array " + weightList);
+
+        } else if ("분기별".equals(selectedType)) {
+
+
+        }
+        xAxis.setValueFormatter(fomatter);
+        TextView chartDescTextView = findViewById(R.id.chartDesc);
+        chartDescTextView.setText(descs[pos]);
+
+        weightEntry = weightList;
+        calEntry = calorieList;
+        setChartData();
     }
 
     public void setChartData() {
-        final LineChart chart = findViewById(R.id.chart);
-        chart.animateY(1000);
-        chart.invalidate();
-        chart.clear();
 
+
+        ArrayList<Entry> calEntry2 = new ArrayList<Entry>();
+        ArrayList<Entry> weightEntry2 = new ArrayList<Entry>();
+
+
+
+
+        calEntry2.add(new Entry(1, 2000));
+        calEntry2.add(new Entry(2, 3200));
+        calEntry2.add(new Entry(3, 2100));
+        calEntry2.add(new Entry(6, 2500));
+
+        weightEntry2.add(new Entry(1, 57f));
+        weightEntry2.add(new Entry(2, 58f));
+        weightEntry2.add(new Entry(5, 60f));
+        weightEntry2.add(new Entry(7, 61.2f));
+
+        LineChart chart = findViewById(R.id.chart);
         LineDataSet calSet, weightSet;
 
         if (chart.getData() != null &&
@@ -470,12 +533,12 @@ public class MainActivity extends AppCompatActivity {
             weightSet = (LineDataSet) chart.getData().getDataSetByIndex(1);
             weightSet.setValues(weightEntry);
 
-            chart.getData().notifyDataChanged();
+            calSet.notifyDataSetChanged();
+            weightSet.notifyDataSetChanged();
             chart.notifyDataSetChanged();
-            chart.invalidate();
 
         } else {
-            calSet = new LineDataSet(calEntry, "칼로리");
+            calSet = new LineDataSet(calEntry2, "칼로리");
             calSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
             calSet.setAxisDependency(YAxis.AxisDependency.LEFT);
             MyValueFormatter calorieFormatter = new MyValueFormatter();
@@ -487,20 +550,15 @@ public class MainActivity extends AppCompatActivity {
             calSet.setLineWidth(1.8f);
             calSet.setCircleRadius(4f);
             calSet.setValueTextSize(10f);
-            calSet.setCircleColor(Color.WHITE);
+            calSet.setCircleColor(R.color.colorLine1Pressed);
             calSet.setHighLightColor(Color.rgb(244, 117, 117));
             calSet.setColor(getColor(R.color.colorLine1));
             calSet.setFillColor(getColor(R.color.colorLine1));
             calSet.setFillAlpha(200);
             calSet.setDrawHorizontalHighlightIndicator(false);
-            calSet.setFillFormatter(new IFillFormatter() {
-                @Override
-                public float getFillLinePosition(ILineDataSet dataSet, LineDataProvider dataProvider) {
-                    return chart.getAxisLeft().getAxisMinimum();
-                }
-            });
+            calSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
 
-            weightSet = new LineDataSet(weightEntry, "몸무게");
+            weightSet = new LineDataSet(weightEntry2, "몸무게");
             weightSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
             weightSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
             MyValueFormatter weightFormatter = new MyValueFormatter();
@@ -512,32 +570,25 @@ public class MainActivity extends AppCompatActivity {
             weightSet.setLineWidth(1.8f);
             weightSet.setValueTextSize(10f);
             weightSet.setCircleRadius(4f);
-            weightSet.setCircleColor(Color.WHITE);
+            weightSet.setCircleColor(R.color.colorLine2Pressed);
             weightSet.setHighLightColor(Color.rgb(244, 117, 117));
             weightSet.setColor(getColor(R.color.colorLine2));
             weightSet.setFillColor(getColor(R.color.colorLine2));
             weightSet.setFillAlpha(0);
             weightSet.setDrawHorizontalHighlightIndicator(false);
-            weightSet.setFillFormatter(new IFillFormatter() {
-                @Override
-                public float getFillLinePosition(ILineDataSet dataSet, LineDataProvider dataProvider) {
-                    return chart.getAxisLeft().getAxisMinimum();
-                }
-            });
+            weightSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
+
+            // create a data object with the data sets
+            LineData chartData = new LineData();
+            chartData.addDataSet(calSet);
+            chartData.addDataSet(weightSet);
+            chartData.setDrawValues(true);
+
+            // set data
+            chart.setData(chartData);
         }
-
-
-        // create a data object with the data sets
-        LineData chartData = new LineData();
-        chartData.addDataSet(calSet);
-        chartData.addDataSet(weightSet);
-
-        // set data
-        chart.setData(chartData);
-        chart.setDragOffsetX(30f);
-
-        chart.setVisibleXRangeMaximum(7);
         chart.moveViewToX(chart.getXRange());
+        chart.invalidate();
     }
 
     // 백 버튼

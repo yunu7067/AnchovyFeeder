@@ -10,6 +10,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 
+import com.example.anchovyfeeder.realmdb.DailyDataObject;
 import com.example.anchovyfeeder.realmdb.WeightObject;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -46,18 +47,25 @@ public class WeightAdderDialog extends Dialog {
                 if (inputWeight > 120.0 || inputWeight < 30.0) {
                     textInputLayout.setError("30Kg ~ 120Kg까지 지원됩니다.");
                 } else {
-                    WeightObject weight = new WeightObject();
+                    /*WeightObject weight = new WeightObject();
                     weight.set(selectedYear, selectedMonth, selectedDate, inputWeight);
-                    // TODO : 이하 Realm DB에 데이터 검사 후 입력
-                    WeightObject temp = MainViewModel.weightsThisMonth.where().equalTo("DATE", weight.getDATE()).findFirst();
+                    // 이하 Realm DB에 데이터 검사 후 입력
+                    WeightObject temp = MainViewModel.weightsThisMonth.where().equalTo("DATE", weight.getDATE()).findFirst();*/
+                    DailyDataObject daily = new DailyDataObject();
+                    daily.setDATE(selectedYear, selectedMonth, selectedDate);
+                    daily.setWEIGHT(inputWeight);
                     android.util.Log.i("WeightAdderDialog()", "1 " + selectedYear + "/" + selectedMonth + "/" + selectedDate);
 
+                    //WeightObject temp = MainViewModel.weightsThisMonth.where().equalTo("DATE", daily.getDATE()).findFirst();
+                    DailyDataObject temp = MainViewModel.DailyDatas.where().equalTo("DATE", daily.getDATE()).findFirst();
                     if (temp == null) {
                         android.util.Log.i("WeightAdderDialog()", "2-1");
 
-                        Realm realm = MainViewModel.weightsThisMonth.getRealm();
+                        //Realm realm = MainViewModel.weightsThisMonth.getRealm();
+                        Realm realm = MainViewModel.DailyDatas.getRealm();
                         realm.beginTransaction();
-                        WeightObject wit = realm.copyToRealm(weight);
+                        //WeightObject wit = realm.copyToRealm(weight);
+                        DailyDataObject odj = realm.copyToRealm(daily);
                         realm.commitTransaction();
                         dismiss();
                     } else {
@@ -69,7 +77,8 @@ public class WeightAdderDialog extends Dialog {
                                 .setMessage("덮어씌우시겠습니까?")
                                 .setCancelable(false)
                                 .setPositiveButton("확인", (dialog, whichButton) -> {
-                                    Realm realm = MainViewModel.weightsThisMonth.getRealm();
+                                    //Realm realm = MainViewModel.weightsThisMonth.getRealm();
+                                    Realm realm = MainViewModel.DailyDatas.getRealm();
                                     realm.beginTransaction();
                                     temp.setWEIGHT(inputWeight);
                                     realm.commitTransaction();
@@ -79,9 +88,8 @@ public class WeightAdderDialog extends Dialog {
                         AlertDialog dialog = builder.create();    // 알림창 객체 생성
                         dialog.show();    // 알림창 띄우기
                     }
-                    Toast.makeText(view.getContext(), weight.getDATE() + ", " + weight.getWEIGHT() + "Kg", Toast.LENGTH_SHORT).show();
-
-
+                    //Toast.makeText(view.getContext(), weight.getDATE() + ", " + weight.getWEIGHT() + "Kg", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(view.getContext(), daily.getDATE() + ", " + daily.getWEIGHT() + "Kg", Toast.LENGTH_SHORT).show();
                 }
             }
         });

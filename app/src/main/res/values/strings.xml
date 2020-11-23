@@ -19,7 +19,7 @@
         <item>분기별</item>
     </string-array>
     <string-array name="chart_type_desc_array">
-        <item>한달간 일별 수치를 보여줍니다.</item>
+        <item>이번 달의 일별 수치를 보여줍니다.</item>
         <item>지난 7주간의 수치를 보여줍니다.</item>
         <item>지난 4분기 동안의 수치를 보여줍니다.</item>
     </string-array>

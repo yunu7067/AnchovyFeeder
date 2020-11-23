@@ -35,6 +35,7 @@
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
+                android:visibility="invisible"
                 android:entries="@array/chart_type_array" />
         </LinearLayout>
 

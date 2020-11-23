@@ -193,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
         //FoodObject fo = MainViewModel.foodsRealm.where().contains("FOOD_NAME", "홍차").findFirst();
         if (fo != null) {
             //vo2.deleteFromRealm();
-            
+
             tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
         } else {
             tv.append("NULL");
@@ -369,15 +369,16 @@ public class MainActivity extends AppCompatActivity {
 
         // enable scaling and dragging
         chart.setDragEnabled(true);
-        chart.setScaleEnabled(false);
+        chart.setScaleEnabled(true);
 
         // if disabled, scaling can be done on x- and y-axis separately
         chart.setPinchZoom(false);
-        chart.setDrawGridBackground(false);
-        chart.setMaxHighlightDistance(300);
-
+        //chart.setDrawGridBackground(false);
+        //chart.setMaxHighlightDistance(300);
         //chart.setMaxVisibleValueCount(7);
-
+        //chart.setDragOffsetX(30f);
+        //chart.setVisibleXRangeMaximum(32f);
+        //chart.moveViewToX(20f);
 
         // 가로축
         XAxis xAxis = chart.getXAxis();
@@ -387,7 +388,10 @@ public class MainActivity extends AppCompatActivity {
         xAxis.setValueFormatter(vf);
         xAxis.setTextSize(11);
         xAxis.setTextColor(Color.BLACK);
-        //xAxis.setLabelCount(7, true);
+        xAxis.setGranularity(1f);
+        xAxis.setGranularityEnabled(true);
+        xAxis.setAxisMinimum(1f);
+        xAxis.setAxisMaximum(32f);
         xAxis.setDrawGridLines(true);
         xAxis.setDrawAxisLine(false);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
@@ -405,8 +409,7 @@ public class MainActivity extends AppCompatActivity {
         rightAxis.setDrawLabels(false);
         rightAxis.setGranularityEnabled(false);
 
-        chart.getLegend().setEnabled(false);
-
+        //chart.getLegend().setEnabled(false);
         chart.animateXY(1000, 1000);
 
         // 차트 다시 그리기
@@ -424,8 +427,6 @@ public class MainActivity extends AppCompatActivity {
         XAxis xAxis = chart.getXAxis();
         YAxis leftYAxis = chart.getAxisLeft();
         fomatter.setDecimalFormat("##0");
-
-
 
         android.util.Log.i("chartTypeSpinner", "Value (" + selectedType + ") ");
 
@@ -490,12 +491,29 @@ public class MainActivity extends AppCompatActivity {
             android.util.Log.i("chartTypeSpinner", "Array " + weightList);
 
         } else if ("분기별".equals(selectedType)) {
-
+            // 미구현
 
         }
+        // 차트 가로축 단위 설정
         xAxis.setValueFormatter(fomatter);
+        // 차트 가로축 최대 범위 설정
+        float last = 7f;
+        last = (float) dateCalculator.getDateNow();
+        if (!weightList.isEmpty()) {
+            Entry weightLastEntry = weightList.get(weightList.size() - 1);
+            float lastEntryX = weightLastEntry.getX();
+            last = (lastEntryX > last) ? lastEntryX : last;
+        }
+        if(!calorieList.isEmpty()) {
+            Entry caloriesLastEntry = calorieList.get(calorieList.size() - 1);
+            float lastEntryX = caloriesLastEntry.getX();
+            last = (lastEntryX > last) ? lastEntryX : last;
+        }
+        xAxis.setAxisMaximum(last);
+
         TextView chartDescTextView = findViewById(R.id.chartDesc);
         chartDescTextView.setText(descs[pos]);
+
 
         weightEntry = weightList;
         calEntry = calorieList;
@@ -503,24 +521,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void setChartData() {
-
-
-        ArrayList<Entry> calEntry2 = new ArrayList<Entry>();
-        ArrayList<Entry> weightEntry2 = new ArrayList<Entry>();
-
-
-
-
-        calEntry2.add(new Entry(1, 2000));
-        calEntry2.add(new Entry(2, 3200));
-        calEntry2.add(new Entry(3, 2100));
-        calEntry2.add(new Entry(6, 2500));
-
-        weightEntry2.add(new Entry(1, 57f));
-        weightEntry2.add(new Entry(2, 58f));
-        weightEntry2.add(new Entry(5, 60f));
-        weightEntry2.add(new Entry(7, 61.2f));
-
         LineChart chart = findViewById(R.id.chart);
         LineDataSet calSet, weightSet;
 
@@ -538,7 +538,7 @@ public class MainActivity extends AppCompatActivity {
             chart.notifyDataSetChanged();
 
         } else {
-            calSet = new LineDataSet(calEntry2, "칼로리");
+            calSet = new LineDataSet(calEntry, "칼로리");
             calSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
             calSet.setAxisDependency(YAxis.AxisDependency.LEFT);
             MyValueFormatter calorieFormatter = new MyValueFormatter();
@@ -558,7 +558,7 @@ public class MainActivity extends AppCompatActivity {
             calSet.setDrawHorizontalHighlightIndicator(false);
             calSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
 
-            weightSet = new LineDataSet(weightEntry2, "몸무게");
+            weightSet = new LineDataSet(weightEntry, "몸무게");
             weightSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
             weightSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
             MyValueFormatter weightFormatter = new MyValueFormatter();
@@ -587,6 +587,8 @@ public class MainActivity extends AppCompatActivity {
             // set data
             chart.setData(chartData);
         }
+        chart.fitScreen();
+        chart.setVisibleXRangeMaximum(7f);
         chart.moveViewToX(chart.getXRange());
         chart.invalidate();
     }

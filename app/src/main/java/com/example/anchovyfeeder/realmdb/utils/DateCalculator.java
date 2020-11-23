@@ -4,6 +4,17 @@ import java.util.Calendar;
 import java.util.Date;
 
 public class DateCalculator {
+
+    public int getDateNow() {
+        int date = 0;
+        Calendar cal;
+
+        cal = Calendar.getInstance();
+        date = cal.get(Calendar.DATE);
+
+        return date;
+    }
+
     /**
      * 이번 달의 첫번째와 마지막 날짜의 Date 객체를 반환하는 메소드
      *

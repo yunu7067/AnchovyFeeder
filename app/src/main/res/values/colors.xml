@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#6200EE</color>
-    <color name="colorPrimaryDark">#3700B3</color>
-    <color name="colorAccent">#03DAC5</color>
+    <color name="colorPrimary">#691b99</color>
+    <color name="colorPrimaryDark">#37006a</color>
+    <color name="colorAccent">#9b4dcb</color>
+    <color name="colorLine1">#4FC3F7</color>
+    <color name="colorLine1Pressed">#03A9F4</color>
+    <color name="colorLine2">#FFB74D</color>
+    <color name="colorLine2Pressed">#FF9800</color>
+    <drawable name="d_colorLine1">#4FC3F7</drawable>
 </resources>

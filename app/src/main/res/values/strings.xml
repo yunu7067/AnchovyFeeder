@@ -1,3 +1,27 @@
 <resources>
     <string name="app_name">삼시세끼알리미</string>
+    <string name="CardHeaderAdd">알람을 추가합니다.</string>
+    <string name="header">알람 시간 목록</string>
+    <string name="delete_item_desc">Delete Item</string>
+    <string name="edit_item_desc">Edit Item</string>
+    <string name="alarm_dialog_alarm_name_hint">알람 이름을 기입하세요.</string>
+    <string name="alarm_dialog_alarm_title">알람 시간 설정</string>
+    <string name="exit">EXIT</string>
+    <string name="save">저장</string>
+    <string name="graph_card_view_title">그래프</string>
+    <string name="add_caloris">칼로리 추가</string>
+    <string name="add_weights">몸무게 추가</string>
+    <string name="take_picture">음식 찍기</string>
+    <string name="delay_alarm">알람 미루기</string>
+    <string-array name="chart_type_array">
+        <item>일별</item>
+        <item>주별</item>
+        <item>분기별</item>
+    </string-array>
+    <string-array name="chart_type_desc_array">
+        <item>이번 달의 일별 수치를 보여줍니다.</item>
+        <item>지난 7주간의 수치를 보여줍니다.</item>
+        <item>지난 4분기 동안의 수치를 보여줍니다.</item>
+    </string-array>
+
 </resources>

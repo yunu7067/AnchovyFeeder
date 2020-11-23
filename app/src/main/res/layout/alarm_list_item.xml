@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#000F"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:paddingStart="0dp"
+    android:paddingEnd="3dp">
+
+    <CheckBox
+        android:id="@+id/alarm_checkBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        tools:text=" " />
+
+    <TextView
+        android:id="@+id/alarm_editTextTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:layout_weight="0"
+        android:text=""
+        tools:text="12시 34분" />
+
+    <TextView
+        android:id="@+id/alarm_textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:layout_weight="1"
+        android:text=""
+        android:textSize="18sp"
+        tools:text="알람 제목" />
+
+    <ImageButton
+        android:id="@+id/alarm_imageButton_edit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="5dp"
+        android:layout_weight="0"
+        android:background="#FFFF"
+        android:contentDescription="@string/edit_item_desc"
+        app:srcCompat="@drawable/ic_baseline_edit_24" />
+
+    <ImageButton
+        android:id="@+id/alarm_imageButton_delete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:background="#FFFF"
+        android:contentDescription="@string/delete_item_desc"
+        app:srcCompat="@drawable/ic_baseline_delete_24" />
+</LinearLayout>

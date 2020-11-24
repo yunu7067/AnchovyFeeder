@@ -71,22 +71,32 @@ public class WeightAdderDialog extends Dialog {
                     } else {
                         android.util.Log.i("WeightAdderDialog()", "2-2");
 
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
                         // 취소 버튼 클릭시 설정, 왼쪽 버튼입니다.
-                        builder.setTitle("해당 날짜에 이미 저장된 몸무게가 있습니다.")
-                                .setMessage("덮어씌우시겠습니까?")
-                                .setCancelable(false)
-                                .setPositiveButton("확인", (dialog, whichButton) -> {
-                                    //Realm realm = MainViewModel.weightsThisMonth.getRealm();
-                                    Realm realm = MainViewModel.DailyDatas.getRealm();
-                                    realm.beginTransaction();
-                                    temp.setWEIGHT(inputWeight);
-                                    realm.commitTransaction();
-                                    dismiss();
-                                })
-                                .setNegativeButton("취소",  null);
-                        AlertDialog dialog = builder.create();    // 알림창 객체 생성
-                        dialog.show();    // 알림창 띄우기
+                        if(temp.getWEIGHT() <= 0f) {
+                            // Object는 있지만 몸무게는 저장 안되있는 경우
+                            Realm realm = MainViewModel.DailyDatas.getRealm();
+                            realm.beginTransaction();
+                            temp.setWEIGHT(inputWeight);
+                            realm.commitTransaction();
+                            dismiss();
+
+                        } else {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                            builder.setTitle("해당 날짜에 이미 저장된 몸무게가 있습니다.")
+                                    .setMessage("덮어씌우시겠습니까?")
+                                    .setCancelable(false)
+                                    .setPositiveButton("확인", (dialog, whichButton) -> {
+                                        //Realm realm = MainViewModel.weightsThisMonth.getRealm();
+                                        Realm realm = MainViewModel.DailyDatas.getRealm();
+                                        realm.beginTransaction();
+                                        temp.setWEIGHT(inputWeight);
+                                        realm.commitTransaction();
+                                        dismiss();
+                                    })
+                                    .setNegativeButton("취소",  null);
+                            AlertDialog dialog = builder.create();    // 알림창 객체 생성
+                            dialog.show();
+                        }    // 알림창 띄우기
                     }
                     //Toast.makeText(view.getContext(), weight.getDATE() + ", " + weight.getWEIGHT() + "Kg", Toast.LENGTH_SHORT).show();
                     Toast.makeText(view.getContext(), daily.getDATE() + ", " + daily.getWEIGHT() + "Kg", Toast.LENGTH_SHORT).show();

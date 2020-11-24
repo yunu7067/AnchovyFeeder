@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
 
     @RealmModule(classes = {FoodObject.class})
     public class BundledRealmModule {
+
     }
 
     Realm myRealm;
@@ -103,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
         initComponents();
     }
 
+
     private boolean initRealm() {
         try {
             Realm.init(context);
@@ -132,34 +134,31 @@ public class MainActivity extends AppCompatActivity {
     public void ConvertCSVtoRealm() {
         final Realm mRealm = Realm.getDefaultInstance();
         mRealm.executeTransaction(
-                new Realm.Transaction() {
-                    @Override
-                    public void execute(Realm realm) {
-                        int count = 0;
-                        try {
-                            InputStreamReader is = new InputStreamReader(getResources().openRawResource(R.raw.list1));
-                            BufferedReader reader = new BufferedReader(is);
-                            CSVReader read = new CSVReader(reader);
-                            String[] record = null;
-                            while ((record = read.readNext()) != null) {
-                                if (count++ == 0) continue;
-                                //Log.d("RECORD:::::: ", record[0]);
-                                FoodObject fo = realm.createObject(FoodObject.class);
-                                fo.setNO(Long.valueOf(record[0]));
-                                fo.setFOOD_NAME(record[1]);
-                                fo.setFOOD_TYPE(record[2]);
-                                fo.setAMOUNT_PER_SERVINGS(Double.valueOf(record[3]));
-                                fo.setUNIT(record[4]);
-                                fo.setKCAL(Double.valueOf(record[5]));
-                                fo.setPROTEIN(Double.valueOf(record[6]));
-                                fo.setFAT(Double.valueOf(record[7]));
-                                fo.setCARBOHYDRATE(Double.valueOf(record[7]));
-                                mRealm.insert(fo);
-                                count++;
-                            }
-                        } catch (Exception e) {
-                            Log.d("ERROR:: ", count + ":" + e.getMessage());
+                realm -> {
+                    int count = 0;
+                    try {
+                        InputStreamReader is = new InputStreamReader(getResources().openRawResource(R.raw.list1));
+                        BufferedReader reader = new BufferedReader(is);
+                        CSVReader read = new CSVReader(reader);
+                        String[] record = null;
+                        while ((record = read.readNext()) != null) {
+                            if (count++ == 0) continue;
+                            //Log.d("RECORD:::::: ", record[0]);
+                            FoodObject fo = realm.createObject(FoodObject.class);
+                            fo.setNO(Long.valueOf(record[0]));
+                            fo.setFOOD_NAME(record[1]);
+                            fo.setFOOD_TYPE(record[2]);
+                            fo.setAMOUNT_PER_SERVINGS(Double.valueOf(record[3]));
+                            fo.setUNIT(record[4]);
+                            fo.setKCAL(Double.valueOf(record[5]));
+                            fo.setPROTEIN(Double.valueOf(record[6]));
+                            fo.setFAT(Double.valueOf(record[7]));
+                            fo.setCARBOHYDRATE(Double.valueOf(record[7]));
+                            mRealm.insert(fo);
+                            count++;
                         }
+                    } catch (Exception e) {
+                        Log.d("ERROR:: ", count + ":" + e.getMessage());
                     }
                 }
         );
@@ -188,16 +187,20 @@ public class MainActivity extends AppCompatActivity {
 
         TextView tv = (TextView) findViewById(R.id.textarea);
         tv.append("Realm 테스트\n");
-        MainViewModel.foodsRealm = mRealm.where(FoodObject.class).findAll();
-        FoodObject fo = MainViewModel.foodsRealm.where().like("FOOD_NAME", "ㄱ*").findFirst();
-        //FoodObject fo = MainViewModel.foodsRealm.where().contains("FOOD_NAME", "홍차").findFirst();
+        RealmResults<FoodObject> results = mRealm.where(FoodObject.class).findAll();
+        ArrayList<FoodObject> foods = new ArrayList<>();
+        if (!results.isEmpty())
+            foods.addAll(mRealm.copyFromRealm(results));
+        MainViewModel.foodList = foods;
+        android.util.Log.i("loadFoodRealFile()", "음식 목록" + foods.size() + "개 로드");
+/*
+        FoodObject fo = MainViewModel.foodsRealm.where().like("FOOD_NAME", "홍차").findFirst();
         if (fo != null) {
             //vo2.deleteFromRealm();
-
             tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
         } else {
             tv.append("NULL");
-        }
+        }*/
     }
 
     /**
@@ -284,22 +287,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
-            //그래프에 들어갈 좌표값 입력
-            calEntry.add(new Entry(1, 2000));
-            calEntry.add(new Entry(2, 3200));
-            calEntry.add(new Entry(3, 2100));
-            calEntry.add(new Entry(6, 2500));
-
-            weightEntry.add(new Entry(1, 57f));
-            weightEntry.add(new Entry(2, 58f));
-            weightEntry.add(new Entry(5, 60f));
-            weightEntry.add(new Entry(7, 61.2f));
+            //그래프에 들어갈 임시값 입력
+            calEntry.add(new Entry(0, 2700));
+            weightEntry.add(new Entry(0, 50f));
             initChart();
             setChartData();
-
-
         }
-
         setEvent();
     }
 
@@ -435,17 +428,18 @@ public class MainActivity extends AppCompatActivity {
             leftYAxis.removeAllLimitLines();
             LimitLine ll = new LimitLine(2000f, "성인 여성 일일 권장 칼로리");
             ll.setLineColor(Color.RED);
-            ll.setLineWidth(4f);
+            ll.setLineWidth(1.5f);
+            ll.enableDashedLine(3.5f, 2f, 1);
             ll.setTextColor(Color.BLACK);
             ll.setTextSize(12f);
             leftYAxis.addLimitLine(ll);
             LimitLine ll_man = new LimitLine(2700f, "성인 남성 일일 권장 칼로리");
-            ll.setLineColor(Color.RED);
-            ll.setLineWidth(4f);
-            ll.setTextColor(Color.BLACK);
-            ll.setTextSize(12f);
+            ll_man.setLineColor(Color.RED);
+            ll_man.setLineWidth(1.5f);
+            ll_man.enableDashedLine(3.5f, 2f, 1);
+            ll_man.setTextColor(Color.BLACK);
+            ll_man.setTextSize(12f);
             leftYAxis.addLimitLine(ll_man);
-            leftYAxis.removeAllLimitLines();
 
             Date[] dates = dateCalculator.getFirstAndLastDayOfMonth();
             fomatter.setUnit("일");
@@ -460,7 +454,7 @@ public class MainActivity extends AppCompatActivity {
                 if (item.getCalorieSum() > 0.0)
                     calorieList.add(item.getCalorieEntry());
             }
-            android.util.Log.i("chartTypeSpinner", "Array " + weightList);
+            android.util.Log.i("chartTypeSpinner", "Array Size: " + weightList.size() + " and " + calorieList.size());
 
         } else if ("주별".equals(selectedType)) {
             // 왼쪽 세로축 제한선
@@ -504,7 +498,7 @@ public class MainActivity extends AppCompatActivity {
             float lastEntryX = weightLastEntry.getX();
             last = (lastEntryX > last) ? lastEntryX : last;
         }
-        if(!calorieList.isEmpty()) {
+        if (!calorieList.isEmpty()) {
             Entry caloriesLastEntry = calorieList.get(calorieList.size() - 1);
             float lastEntryX = caloriesLastEntry.getX();
             last = (lastEntryX > last) ? lastEntryX : last;
@@ -524,7 +518,7 @@ public class MainActivity extends AppCompatActivity {
         LineChart chart = findViewById(R.id.chart);
         LineDataSet calSet, weightSet;
 
-        if (chart.getData() != null &&
+        /*if (chart.getData() != null &&
                 chart.getData().getDataSetCount() > 0) {
 
             calSet = (LineDataSet) chart.getData().getDataSetByIndex(0);
@@ -537,7 +531,7 @@ public class MainActivity extends AppCompatActivity {
             weightSet.notifyDataSetChanged();
             chart.notifyDataSetChanged();
 
-        } else {
+        } else {*/
             calSet = new LineDataSet(calEntry, "칼로리");
             calSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
             calSet.setAxisDependency(YAxis.AxisDependency.LEFT);
@@ -586,7 +580,7 @@ public class MainActivity extends AppCompatActivity {
 
             // set data
             chart.setData(chartData);
-        }
+        //}
         chart.fitScreen();
         chart.setVisibleXRangeMaximum(7f);
         chart.moveViewToX(chart.getXRange());

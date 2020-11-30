@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.anchovyfeeder.realmdb.DailyDataObject;
 import com.example.anchovyfeeder.realmdb.FoodObject;
+import com.example.anchovyfeeder.realmdb.PhotoObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,6 +18,7 @@ public class MainViewModel extends ViewModel {
     //static public RealmResults<FoodObject> foodsRealm;
     static public ArrayList<FoodObject> foodList;
     static public RealmResults<DailyDataObject> DailyDatas;
+    static public RealmResults<PhotoObject> Photos;
 
     public static void setAlarmList(ArrayList<AlarmListItem> list) {
         Collections.sort(list, (item1, item2) -> {

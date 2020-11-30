@@ -13,6 +13,7 @@
     <string name="add_weights">몸무게 추가</string>
     <string name="take_picture">음식 찍기</string>
     <string name="delay_alarm">알람 미루기</string>
+    <string name="notification_message">실행중입니다.</string>
     <string-array name="chart_type_array">
         <item>일별</item>
         <item>주별</item>

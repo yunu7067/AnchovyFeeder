@@ -1,7 +1,15 @@
 package com.example.anchovyfeeder;
 
+import android.app.Notification;
+import android.app.PendingIntent;
+import android.bluetooth.BluetoothClass;
+import android.content.BroadcastReceiver;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -11,8 +19,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,7 +33,9 @@ import androidx.work.WorkRequest;
 import com.example.anchovyfeeder.databinding.ActivityMainBinding;
 import com.example.anchovyfeeder.realmdb.DailyDataObject;
 import com.example.anchovyfeeder.realmdb.FoodObject;
+import com.example.anchovyfeeder.realmdb.PhotoObject;
 import com.example.anchovyfeeder.realmdb.utils.DateCalculator;
+import com.example.anchovyfeeder.receiver.DeviceDateChangeReceiver;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
@@ -47,8 +59,6 @@ import io.realm.annotations.RealmModule;
 
 /*
  * TODO [ 예정 ]
- *   날짜가 변경되면 자동으로 WorkManager 알람 다시 Request하기
- *   알람 오면 소리나 진동 같이 울리게
  *   알람 오고 미루기 누르면 알림에 보여주기
  *   누르면 바로 알람창 다시 띄우기
  *
@@ -62,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<Entry> calEntry = new ArrayList<>();
     ArrayList<Entry> weightEntry = new ArrayList<>();
     DateCalculator dateCalculator = new DateCalculator();
+    AlarmWorkRequestResetter alarm = new AlarmWorkRequestResetter(context, alarmList);
 
     @RealmModule(classes = {FoodObject.class})
     public class BundledRealmModule {
@@ -85,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
         viewModel.alarmList.observe(this, alarmList -> {
             Toast.makeText(context, "알람 재설정", Toast.LENGTH_SHORT).show();
             this.alarmList = alarmList;
-            resetAlarm();
+            alarm.resetAlarm();
             saveAlarmListInRealm();
         });
         // Realm Database Initialization
@@ -102,8 +113,36 @@ public class MainActivity extends AppCompatActivity {
         //ConvertCSVtoRealm();
         loadFoodRealFile();
         initComponents();
+
     }
 
+    DeviceDateChangeReceiver dateReceiver = new DeviceDateChangeReceiver();
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i("MainAxtivity", "onResume()");
+
+
+        // 날짜 변경시 알람 다시 붙이는 리시버 시작
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_DATE_CHANGED);
+        dateReceiver.setAlarmList(alarmList);
+        registerReceiver(dateReceiver, intentFilter);
+        Log.i("ACTION_DATE_CHANGED", "리시버 설정");
+
+
+        // 포그라운드 서비스 시작
+        Intent intent = new Intent(context, MainForegroundService.class);
+        ContextCompat.startForegroundService(context, intent);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i("MainAxtivity", "onResume()");
+
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(dateReceiver);
+    }
 
     private boolean initRealm() {
         try {
@@ -112,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
             Realm.setDefaultConfiguration(myRealmConfig);
             myRealm = Realm.getDefaultInstance();
             loadAlarmListInRealm();
-            //loadWeightsInRealm();
+            loadPhotosInRealm();
             loadUserDatasInRealm();
             return true;
         } catch (Exception e) {
@@ -193,14 +232,13 @@ public class MainActivity extends AppCompatActivity {
             foods.addAll(mRealm.copyFromRealm(results));
         MainViewModel.foodList = foods;
         android.util.Log.i("loadFoodRealFile()", "음식 목록" + foods.size() + "개 로드");
-/*
-        FoodObject fo = MainViewModel.foodsRealm.where().like("FOOD_NAME", "홍차").findFirst();
-        if (fo != null) {
-            //vo2.deleteFromRealm();
-            tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
-        } else {
-            tv.append("NULL");
-        }*/
+    }
+
+    private void loadPhotosInRealm() {
+        myRealm.executeTransaction(_realm -> {
+            MainViewModel.Photos = _realm.where(PhotoObject.class).findAll();
+        });
+        android.util.Log.i("loadPhotosInRealm()", "사진 " + MainViewModel.Photos.size() + "개 로드");
     }
 
     /**
@@ -231,27 +269,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Realm 데이터베이스에 있는 WeightObject를 전부 불러온 후 ViewModel에 바인드한다.
+     * Realm 데이터베이스에 있는 유저 데이터를 전부 불러온 후 ViewModel에 설정한다.
      */
-   /* private void loadWeightsInRealm() {
-        myRealm.executeTransaction(_realm -> {
-            MainViewModel.weightsThisMonth = _realm.where(WeightObject.class)
-                    .findAll();
-        });
-    }*/
     private void loadUserDatasInRealm() {
         myRealm.executeTransaction(_realm -> {
-            MainViewModel.DailyDatas = _realm.where(DailyDataObject.class)
-                    .findAll();
+            MainViewModel.DailyDatas = _realm.where(DailyDataObject.class).findAll();
         });
     }
-
 
     public void initComponents() {
         // AlarmList CardView
         {
             MainViewModel.setAlarmList(alarmList);
-
             RecyclerView AlarmList = findViewById(R.id.AlarmList);
 
             // 리사이클러뷰에 Adapter 객체 지정.
@@ -296,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
         setEvent();
     }
 
-    private void resetAlarm() {
+   /* private void resetAlarm() {
         WorkManager workManager = WorkManager.getInstance(context);
         workManager.cancelAllWork();
         Calendar nowCalendar = Calendar.getInstance();
@@ -330,7 +359,7 @@ public class MainActivity extends AppCompatActivity {
             android.util.Log.i("WorkManager Request", "Delay(" + delaySecond + "초), Tag(" + item.getName() + ") ");
         }
     }
-
+*/
     private void setEvent() {
         final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
 
@@ -382,8 +411,10 @@ public class MainActivity extends AppCompatActivity {
         xAxis.setTextSize(11);
         xAxis.setTextColor(Color.BLACK);
         xAxis.setGranularity(1f);
+
         xAxis.setGranularityEnabled(true);
-        xAxis.setAxisMinimum(1f);
+        //xAxis.setAxisMinimum(1f);
+        xAxis.setAxisMinimum(-0.4f);
         xAxis.setAxisMaximum(32f);
         xAxis.setDrawGridLines(true);
         xAxis.setDrawAxisLine(false);
@@ -503,7 +534,7 @@ public class MainActivity extends AppCompatActivity {
             float lastEntryX = caloriesLastEntry.getX();
             last = (lastEntryX > last) ? lastEntryX : last;
         }
-        xAxis.setAxisMaximum(last);
+        xAxis.setAxisMaximum(last + 0.4f);
 
         TextView chartDescTextView = findViewById(R.id.chartDesc);
         chartDescTextView.setText(descs[pos]);
@@ -532,56 +563,56 @@ public class MainActivity extends AppCompatActivity {
             chart.notifyDataSetChanged();
 
         } else {*/
-            calSet = new LineDataSet(calEntry, "칼로리");
-            calSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-            calSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-            MyValueFormatter calorieFormatter = new MyValueFormatter();
-            calorieFormatter.setUnit("Kcal");
-            calSet.setValueFormatter(calorieFormatter);
-            calSet.setCubicIntensity(0.2f);
-            calSet.setDrawFilled(true);
-            calSet.setDrawCircles(false);
-            calSet.setLineWidth(1.8f);
-            calSet.setCircleRadius(4f);
-            calSet.setValueTextSize(10f);
-            calSet.setCircleColor(R.color.colorLine1Pressed);
-            calSet.setHighLightColor(Color.rgb(244, 117, 117));
-            calSet.setColor(getColor(R.color.colorLine1));
-            calSet.setFillColor(getColor(R.color.colorLine1));
-            calSet.setFillAlpha(200);
-            calSet.setDrawHorizontalHighlightIndicator(false);
-            calSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
+        calSet = new LineDataSet(calEntry, "칼로리");
+        calSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        calSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        MyValueFormatter calorieFormatter = new MyValueFormatter();
+        calorieFormatter.setUnit("Kcal");
+        calSet.setValueFormatter(calorieFormatter);
+        calSet.setCubicIntensity(0.2f);
+        calSet.setDrawFilled(true);
+        calSet.setDrawCircles(false);
+        calSet.setLineWidth(1.8f);
+        calSet.setCircleRadius(4f);
+        calSet.setValueTextSize(10f);
+        calSet.setCircleColor(R.color.colorLine1Pressed);
+        calSet.setHighLightColor(Color.rgb(244, 117, 117));
+        calSet.setColor(getColor(R.color.colorLine1));
+        calSet.setFillColor(getColor(R.color.colorLine1));
+        calSet.setFillAlpha(200);
+        calSet.setDrawHorizontalHighlightIndicator(false);
+        calSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
 
-            weightSet = new LineDataSet(weightEntry, "몸무게");
-            weightSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
-            weightSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
-            MyValueFormatter weightFormatter = new MyValueFormatter();
-            weightFormatter.setUnit("Kg");
-            weightSet.setValueFormatter(weightFormatter);
-            weightSet.setCubicIntensity(0.2f);
-            weightSet.setDrawFilled(false);
-            weightSet.setDrawCircles(true);
-            weightSet.setLineWidth(1.8f);
-            weightSet.setValueTextSize(10f);
-            weightSet.setCircleRadius(4f);
-            weightSet.setCircleColor(R.color.colorLine2Pressed);
-            weightSet.setHighLightColor(Color.rgb(244, 117, 117));
-            weightSet.setColor(getColor(R.color.colorLine2));
-            weightSet.setFillColor(getColor(R.color.colorLine2));
-            weightSet.setFillAlpha(0);
-            weightSet.setDrawHorizontalHighlightIndicator(false);
-            weightSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
+        weightSet = new LineDataSet(weightEntry, "몸무게");
+        weightSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
+        weightSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
+        MyValueFormatter weightFormatter = new MyValueFormatter();
+        weightFormatter.setUnit("Kg");
+        weightSet.setValueFormatter(weightFormatter);
+        weightSet.setCubicIntensity(0.2f);
+        weightSet.setDrawFilled(false);
+        weightSet.setDrawCircles(true);
+        weightSet.setLineWidth(1.8f);
+        weightSet.setValueTextSize(10f);
+        weightSet.setCircleRadius(4f);
+        weightSet.setCircleColor(R.color.colorLine2Pressed);
+        weightSet.setHighLightColor(Color.rgb(244, 117, 117));
+        weightSet.setColor(getColor(R.color.colorLine2));
+        weightSet.setFillColor(getColor(R.color.colorLine2));
+        weightSet.setFillAlpha(0);
+        weightSet.setDrawHorizontalHighlightIndicator(false);
+        weightSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
 
-            // create a data object with the data sets
-            LineData chartData = new LineData();
-            chartData.addDataSet(calSet);
-            chartData.addDataSet(weightSet);
-            chartData.setDrawValues(true);
+        // create a data object with the data sets
+        LineData chartData = new LineData();
+        chartData.addDataSet(calSet);
+        chartData.addDataSet(weightSet);
+        chartData.setDrawValues(true);
 
-            // set data
-            chart.setData(chartData);
+        // set data
+        chart.setData(chartData);
         //}
-        chart.fitScreen();
+        //chart.fitScreen();
         chart.setVisibleXRangeMaximum(7f);
         chart.moveViewToX(chart.getXRange());
         chart.invalidate();

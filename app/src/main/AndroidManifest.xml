@@ -22,12 +22,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <service
+            android:name=".MainForegroundService"
+            android:enabled="true"
+            android:exported="true"></service>
+
         <activity
             android:name=".AlarmNotifyActivity"
-            android:theme="@style/DialActivity"></activity>
+            android:theme="@style/DialActivity" />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -36,5 +42,16 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="camera"
             tools:node="merge" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.example.anchovyfeeder"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/picture_path" />
+        </provider>
     </application>
+
 </manifest>

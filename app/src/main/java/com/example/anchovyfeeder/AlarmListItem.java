@@ -16,9 +16,13 @@ public class AlarmListItem extends RealmObject {
 
     public void setTime(int hh, int mm, int ss) {
         CALENDAR = Calendar.getInstance();
+        CALENDAR.set(Calendar.YEAR, 2020);
+        CALENDAR.set(Calendar.DAY_OF_YEAR, 1);
         CALENDAR.set(Calendar.HOUR_OF_DAY, hh);
         CALENDAR.set(Calendar.MINUTE, mm);
         CALENDAR.set(Calendar.SECOND, ss);
+        CALENDAR.set(Calendar.MILLISECOND, 0);
+
         DATE = new Date(CALENDAR.getTimeInMillis());
     }
 

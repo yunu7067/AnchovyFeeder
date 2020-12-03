@@ -2,6 +2,7 @@ package com.example.anchovyfeeder.realmdb;
 
 import android.net.Uri;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -28,8 +29,18 @@ public class PhotoObject extends RealmObject {
         this.DATE = cal.getTime();
     }
 
+    public String getDateFormat(SimpleDateFormat format) {
+        return format.format(DATE);
+    }
+
+    public int getDay() {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(DATE);
+        return cal.get(Calendar.DATE);
+    }
+
     public Uri getPHOTO_URIToUri() {
-        return Uri.parse(PHOTO_URI);
+        return Uri.parse("file://" + PHOTO_URI);
     }
 
     public String getPHOTO_URI() {

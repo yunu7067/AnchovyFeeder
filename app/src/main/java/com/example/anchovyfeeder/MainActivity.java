@@ -1,15 +1,9 @@
 package com.example.anchovyfeeder;
 
-import android.app.Notification;
-import android.app.PendingIntent;
-import android.bluetooth.BluetoothClass;
-import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -26,16 +20,15 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkManager;
-import androidx.work.WorkRequest;
 
 import com.example.anchovyfeeder.databinding.ActivityMainBinding;
+import com.example.anchovyfeeder.gallery.GalleryActivity;
 import com.example.anchovyfeeder.realmdb.DailyDataObject;
 import com.example.anchovyfeeder.realmdb.FoodObject;
 import com.example.anchovyfeeder.realmdb.PhotoObject;
 import com.example.anchovyfeeder.realmdb.utils.DateCalculator;
 import com.example.anchovyfeeder.receiver.DeviceDateChangeReceiver;
+import com.facebook.drawee.backends.pipeline.Fresco;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
@@ -48,22 +41,12 @@ import com.opencsv.CSVReader;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 import io.realm.annotations.RealmModule;
-
-/*
- * TODO [ 예정 ]
- *   알람 오고 미루기 누르면 알림에 보여주기
- *   누르면 바로 알람창 다시 띄우기
- *
- * TODO [ 진행중 ]
- * */
 
 public class MainActivity extends AppCompatActivity {
     MainActivity context = this;
@@ -85,38 +68,51 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // init Fresco
+        Fresco.initialize(this);
+
         setContentView(R.layout.activity_main);
 
         // ViewModel Data binding
-        binding = DataBindingUtil.setContentView(context, R.layout.activity_main);
         final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
+        binding = DataBindingUtil.setContentView(context, R.layout.activity_main);
         binding.setViewModel(viewModel);
         binding.setLifecycleOwner(context);
+        // Realm Database Initialization
+        if (!initRealm())
+            Toast.makeText(context, "데이터베이스 로드 실패", Toast.LENGTH_SHORT).show();
+        // set Observer Viemodel, RealmResults
+        setObserver();
+        //ConvertCSVtoRealm();
+        loadFoodRealFile();
+        initComponents();
+
+//        ((SimpleDraweeView) findViewById(R.id.phototest)).setImageURI(MainViewModel.Photos.get(0).getPHOTO_URIToUri());
+        Intent intent = new Intent(this, GalleryActivity.class);
+        startActivity(intent);
+
+    }
+
+    void setObserver() {
         // Alarm List Observer
-        viewModel.alarmList.observe(this, alarmList -> {
+        MainViewModel.alarmList.observe(this, alarmList -> {
             Toast.makeText(context, "알람 재설정", Toast.LENGTH_SHORT).show();
             this.alarmList = alarmList;
             alarm.resetAlarm();
             saveAlarmListInRealm();
         });
-        // Realm Database Initialization
-        if (!initRealm())
-            Toast.makeText(context, "데이터베이스 로드 실패", Toast.LENGTH_SHORT).show();
         // Realm Database Observer
-        viewModel.DailyDatas.addChangeListener((results) -> {
+        MainViewModel.DailyDatas.addChangeListener((results) -> {
             Log.i("ViewModel.DailyDatas", "변경감지!!!!!!!! + " + results.size());
             Spinner sp = findViewById(R.id.chartTypeSpinner);
             Log.i("ViewModel.DailyDatas", "ITEM(" + sp.getSelectedItem().toString() + ")  POS(" + sp.getSelectedItemPosition());
             refreshChartEntries(sp.getSelectedItem().toString(), sp.getSelectedItemPosition());
         });
 
-        //ConvertCSVtoRealm();
-        loadFoodRealFile();
-        initComponents();
-
     }
 
     DeviceDateChangeReceiver dateReceiver = new DeviceDateChangeReceiver();
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -201,9 +197,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
-
-
-        TextView tv = (TextView) findViewById(R.id.textarea);
+        /*TextView tv = (TextView) findViewById(R.id.textarea);
         tv.append("Realm 테스트\n");
         FoodObject fo = mRealm.where(FoodObject.class).equalTo("NO", 3).findFirst();
         if (fo != null) {
@@ -211,8 +205,7 @@ public class MainActivity extends AppCompatActivity {
             tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
         } else {
             tv.append("NULL");
-        }
-
+        }*/
     }
 
     public void loadFoodRealFile() {
@@ -224,8 +217,8 @@ public class MainActivity extends AppCompatActivity {
 
         Realm mRealm = Realm.getInstance(config);
 
-        TextView tv = (TextView) findViewById(R.id.textarea);
-        tv.append("Realm 테스트\n");
+       /* TextView tv = (TextView) findViewById(R.id.textarea);
+        tv.append("Realm 테스트\n");*/
         RealmResults<FoodObject> results = mRealm.where(FoodObject.class).findAll();
         ArrayList<FoodObject> foods = new ArrayList<>();
         if (!results.isEmpty())
@@ -325,41 +318,41 @@ public class MainActivity extends AppCompatActivity {
         setEvent();
     }
 
-   /* private void resetAlarm() {
-        WorkManager workManager = WorkManager.getInstance(context);
-        workManager.cancelAllWork();
-        Calendar nowCalendar = Calendar.getInstance();
-        nowCalendar.setTime(new Date(System.currentTimeMillis()));
-        int nowHour = nowCalendar.get(Calendar.HOUR_OF_DAY);
-        int nowMinute = nowCalendar.get(Calendar.MINUTE);
-        int nowSecond = nowCalendar.get(Calendar.SECOND);
-        int delaySecond = 0;
+    /* private void resetAlarm() {
+         WorkManager workManager = WorkManager.getInstance(context);
+         workManager.cancelAllWork();
+         Calendar nowCalendar = Calendar.getInstance();
+         nowCalendar.setTime(new Date(System.currentTimeMillis()));
+         int nowHour = nowCalendar.get(Calendar.HOUR_OF_DAY);
+         int nowMinute = nowCalendar.get(Calendar.MINUTE);
+         int nowSecond = nowCalendar.get(Calendar.SECOND);
+         int delaySecond = 0;
 
-        for (AlarmListItem item : alarmList) {
-            // 현재 시간 이전에 있는 아이템은 큐에 추가 안함
-            //android.util.Log.i("WorkManager Request", nowHour + "<->" + item.getHour());
-            //android.util.Log.i("WorkManager Request", nowMinute + "<->" + item.getMinute());
-            if (item.getHour() < nowHour) {
-                // 알람 시간이 현재시간보다 작으면 무조건 건너뀜
-                //android.util.Log.i("WorkManager Request", "Skip1");
-                continue;
-            } else if ((item.getHour() == nowHour) && (item.getMinute() <= nowMinute)) {
-                // 알람 시각이 현재 시각과 같고, 알람 분이 현재 분보다 작거나 같을 때 건너뜀
-                //android.util.Log.i("WorkManager Request", "Skip2");
-                continue;
-            }
-            delaySecond = (item.getHour() - nowHour) * 60 * 60 + (item.getMinute() - nowMinute) * 60 - nowSecond;
-            // Request 생성
-            WorkRequest dealyWorkRequest = new OneTimeWorkRequest.Builder(AlarmWorker.class)
-                    .setInitialDelay(delaySecond, TimeUnit.SECONDS)
-                    .addTag(item.getName())
-                    .build();
-            // WorkManager 큐에 추가
-            workManager.enqueue(dealyWorkRequest);
-            android.util.Log.i("WorkManager Request", "Delay(" + delaySecond + "초), Tag(" + item.getName() + ") ");
-        }
-    }
-*/
+         for (AlarmListItem item : alarmList) {
+             // 현재 시간 이전에 있는 아이템은 큐에 추가 안함
+             //android.util.Log.i("WorkManager Request", nowHour + "<->" + item.getHour());
+             //android.util.Log.i("WorkManager Request", nowMinute + "<->" + item.getMinute());
+             if (item.getHour() < nowHour) {
+                 // 알람 시간이 현재시간보다 작으면 무조건 건너뀜
+                 //android.util.Log.i("WorkManager Request", "Skip1");
+                 continue;
+             } else if ((item.getHour() == nowHour) && (item.getMinute() <= nowMinute)) {
+                 // 알람 시각이 현재 시각과 같고, 알람 분이 현재 분보다 작거나 같을 때 건너뜀
+                 //android.util.Log.i("WorkManager Request", "Skip2");
+                 continue;
+             }
+             delaySecond = (item.getHour() - nowHour) * 60 * 60 + (item.getMinute() - nowMinute) * 60 - nowSecond;
+             // Request 생성
+             WorkRequest dealyWorkRequest = new OneTimeWorkRequest.Builder(AlarmWorker.class)
+                     .setInitialDelay(delaySecond, TimeUnit.SECONDS)
+                     .addTag(item.getName())
+                     .build();
+             // WorkManager 큐에 추가
+             workManager.enqueue(dealyWorkRequest);
+             android.util.Log.i("WorkManager Request", "Delay(" + delaySecond + "초), Tag(" + item.getName() + ") ");
+         }
+     }
+ */
     private void setEvent() {
         final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
 

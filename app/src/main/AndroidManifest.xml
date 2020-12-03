@@ -30,6 +30,8 @@
         <activity
             android:name=".AlarmNotifyActivity"
             android:theme="@style/DialActivity" />
+        <activity android:name=".gallery.GalleryActivity" />
+        <activity android:name=".gallery.PhotoActivity" />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

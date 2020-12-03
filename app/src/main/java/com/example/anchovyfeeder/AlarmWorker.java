@@ -38,6 +38,7 @@ public class AlarmWorker extends Worker {
         try {
             Intent alarmIntent = new Intent(getApplicationContext(), AlarmNotifyActivity.class);
             alarmIntent.putExtra("NAME", dialogTitle);
+            alarmIntent.putExtra("DELAY_WORK_ID", "");
             getApplicationContext().startActivity(alarmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK ));
 
             return Result.success();

@@ -22,6 +22,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.anchovyfeeder.databinding.ActivityMainBinding;
+import com.example.anchovyfeeder.foodrecommender.FoodRecommender;
+import com.example.anchovyfeeder.foodrecommender.FoodRecommenderAdapter;
 import com.example.anchovyfeeder.gallery.GalleryActivity;
 import com.example.anchovyfeeder.realmdb.DailyDataObject;
 import com.example.anchovyfeeder.realmdb.FoodObject;
@@ -59,7 +61,6 @@ public class MainActivity extends AppCompatActivity {
 
     @RealmModule(classes = {FoodObject.class})
     public class BundledRealmModule {
-
     }
 
     Realm myRealm;
@@ -86,11 +87,6 @@ public class MainActivity extends AppCompatActivity {
         //ConvertCSVtoRealm();
         loadFoodRealFile();
         initComponents();
-
-//        ((SimpleDraweeView) findViewById(R.id.phototest)).setImageURI(MainViewModel.Photos.get(0).getPHOTO_URIToUri());
-        Intent intent = new Intent(this, GalleryActivity.class);
-        startActivity(intent);
-
     }
 
     void setObserver() {
@@ -220,6 +216,7 @@ public class MainActivity extends AppCompatActivity {
        /* TextView tv = (TextView) findViewById(R.id.textarea);
         tv.append("Realm 테스트\n");*/
         RealmResults<FoodObject> results = mRealm.where(FoodObject.class).findAll();
+        MainViewModel.Foods = results;
         ArrayList<FoodObject> foods = new ArrayList<>();
         if (!results.isEmpty())
             foods.addAll(mRealm.copyFromRealm(results));
@@ -292,6 +289,17 @@ public class MainActivity extends AppCompatActivity {
                 aldial.show();
             });
         }
+        // Food Recommender CardView
+        {
+            FoodRecommender foodRecommender = new FoodRecommender();
+            ArrayList<FoodObject> foods = foodRecommender.getRecommendedFood();
+            RecyclerView foodRecommenderLits = findViewById(R.id.FoodRecommenderLits);
+            foodRecommenderLits.setLayoutManager(
+                    new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+            FoodRecommenderAdapter foodAdapter = new FoodRecommenderAdapter(foods);
+            foodRecommenderLits.setAdapter(foodAdapter);
+        }
+
 
         // Chart CardView
         {
@@ -363,9 +371,13 @@ public class MainActivity extends AppCompatActivity {
         });
         // 몸무게 추가 버튼
         findViewById(R.id.addWeights).setOnClickListener(view -> {
-            //Toast.makeText(getApplicationContext(), "구현중", Toast.LENGTH_SHORT).show();
             WeightAdderDialog dial = new WeightAdderDialog(view.getContext());
             dial.show();
+        });
+        // 갤러리 열기 버튼
+        findViewById(R.id.open_gallery).setOnClickListener(view -> {
+            Intent intent = new Intent(this, GalleryActivity.class);
+            startActivity(intent);
         });
     }
 
@@ -605,7 +617,7 @@ public class MainActivity extends AppCompatActivity {
         // set data
         chart.setData(chartData);
         //}
-        //chart.fitScreen();
+        chart.fitScreen();
         chart.setVisibleXRangeMaximum(7f);
         chart.moveViewToX(chart.getXRange());
         chart.invalidate();

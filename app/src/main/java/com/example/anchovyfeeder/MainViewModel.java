@@ -13,9 +13,9 @@ import java.util.Collections;
 import io.realm.RealmResults;
 
 public class MainViewModel extends ViewModel {
-    static MutableLiveData<ArrayList<AlarmListItem>> alarmList = new MutableLiveData<>();
+    static public MutableLiveData<ArrayList<AlarmListItem>> alarmList = new MutableLiveData<>();
     // Realm Object
-    //static public RealmResults<FoodObject> foodsRealm;
+    static public RealmResults<FoodObject> Foods;
     static public ArrayList<FoodObject> foodList;
     static public RealmResults<DailyDataObject> DailyDatas;
     static public RealmResults<PhotoObject> Photos;

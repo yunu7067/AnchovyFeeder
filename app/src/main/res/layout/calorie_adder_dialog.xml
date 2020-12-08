@@ -55,58 +55,65 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/textInputLayout"
+            <LinearLayout
+                android:id="@+id/foodSearchLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorLine1Pressed"
-                android:paddingHorizontal="20dp"
-                android:paddingVertical="0dp"
-                app:boxStrokeColor="@color/colorLine1Pressed"
+                android:orientation="horizontal"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintHorizontal_chainStyle="spread_inside"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/datePicker"
-                app:startIconDrawable="@drawable/ic_baseline_fastfood_24">
+                android:paddingHorizontal="20dp"
+                app:layout_constraintTop_toBottomOf="@+id/datePicker">
 
-                <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                    android:id="@+id/autoComplete"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="음식 이름을 입력하세요"
-                    android:inputType="textAutoComplete" />
+                <TextView
+                    android:id="@+id/foodName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:hint="우측 버튼을 눌러 음식을 검색하세요"
+                    android:textSize="16sp" />
 
-            </com.google.android.material.textfield.TextInputLayout>
+                <ImageButton
+                    android:id="@+id/foodSearchButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="0"
+                    android:backgroundTint="@color/colorLine1"
+                    android:src="@drawable/ic_baseline_search_24"
+                    android:tint="@android:color/white" />
+            </LinearLayout>
 
             <EditText
-                android:id="@+id/editTextNumberDecimal"
+                android:id="@+id/foodCount"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
                 android:backgroundTint="@color/colorLine1Pressed"
                 android:ems="10"
-                android:inputType="numberDecimal"
+                android:inputType="number"
                 android:maxLength="5"
                 android:maxLines="1"
+                android:text="1"
                 android:textAlignment="textEnd"
                 app:layout_constraintEnd_toStartOf="@+id/unit"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintHorizontal_chainStyle="spread_inside"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textInputLayout" />
+                app:layout_constraintTop_toBottomOf="@+id/foodSearchLayout" />
 
             <TextView
                 android:id="@+id/unit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="20dp"
-                android:text="kCal"
+                android:text="개"
                 app:layout_constraintBottom_toTopOf="@+id/spacer"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/editTextNumberDecimal"
-                app:layout_constraintTop_toBottomOf="@+id/textInputLayout" />
+                app:layout_constraintStart_toEndOf="@+id/foodCount"
+                app:layout_constraintTop_toBottomOf="@+id/foodSearchLayout" />
 
             <Space
                 android:id="@+id/spacer"
@@ -114,7 +121,7 @@
                 android:layout_height="5dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/editTextNumberDecimal" />
+                app:layout_constraintTop_toBottomOf="@+id/foodCount" />
 
             <Button
                 android:id="@+id/dialog_save_button"
@@ -122,8 +129,8 @@
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorLine1"
                 android:text="@string/save"
-                app:layout_constraintHorizontal_bias="0.95"
                 android:textColor="@android:color/white"
+                app:layout_constraintHorizontal_bias="0.95"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/spacer" />

@@ -18,6 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
+            android:paddingBottom="15dp"
             android:orientation="vertical">
 
             <include
@@ -37,16 +38,6 @@
                 layout="@layout/components_chart_card_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
-
-
-            <TextView
-                android:id="@+id/textarea"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:layout_weight="0"
-                android:padding="5dp"
-                android:text="" />
 
         </LinearLayout>
 

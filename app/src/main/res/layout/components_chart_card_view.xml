@@ -35,15 +35,15 @@
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
-                android:visibility="invisible"
-                android:entries="@array/chart_type_array" />
+                android:entries="@array/chart_type_array"
+                android:visibility="invisible" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/chartDesc"
-            android:paddingStart="10dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:paddingStart="10dp" />
 
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart"
@@ -111,6 +111,38 @@
                 android:layout_marginStart="12dp"
                 android:layout_weight="1"
                 android:text="@string/add_weights"
+                android:textSize="21sp" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:src="@drawable/ic_baseline_chevron_right_24" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/open_gallery"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="13dp">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:src="@drawable/ic_baseline_photo_32" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:text="갤러리 열기"
                 android:textSize="21sp" />
 
             <ImageView

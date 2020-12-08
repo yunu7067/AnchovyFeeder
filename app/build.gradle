@@ -10,7 +10,7 @@ android {
         minSdkVersion 23
         targetSdkVersion 30
         versionCode 1
-        versionName "0.1-Alpha"
+        versionName "20.12.01"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -44,6 +44,14 @@ dependencies {
 
     implementation 'com.opencsv:opencsv:4.6'
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+    implementation 'com.github.mirrajabi:search-dialog:1.2.4'
+    // Gallery
+    implementation 'io.github.luizgrp.sectionedrecyclerviewadapter:sectionedrecyclerviewadapter:3.2.0'
+    implementation 'com.facebook.fresco:fresco:2.3.0'
+    implementation 'me.relex:photodraweeview:2.0.0'
+
+
+
 
     def work_version = "2.4.0"
     implementation "androidx.work:work-runtime:$work_version"

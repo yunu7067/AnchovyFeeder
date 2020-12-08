@@ -1,5 +1,7 @@
 package com.example.anchovyfeeder.realmdb;
 
+import android.net.Uri;
+
 import com.github.mikephil.charting.data.Entry;
 
 import java.util.Calendar;
@@ -44,7 +46,7 @@ public class DailyDataObject extends RealmObject {
     }
 
     public Float getWEIGHT() {
-        return WEIGHT.floatValue();
+        return ((WEIGHT != null) ? WEIGHT.floatValue() : 0f);
     }
 
     public void setWEIGHT(Double WEIGHT) {
@@ -53,6 +55,10 @@ public class DailyDataObject extends RealmObject {
 
     public void setWEIGHT(Float WEIGHT) {
         this.WEIGHT = WEIGHT.doubleValue();
+    }
+
+    public void appendFOODS(RealmList<FoodObject> FOODS) {
+        this.FOODS.addAll(FOODS);
     }
 
     /**

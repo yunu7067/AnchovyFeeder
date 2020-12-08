@@ -1,10 +1,12 @@
 package com.example.anchovyfeeder.realmdb;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import io.realm.RealmObject;
+import ir.mirrajabi.searchdialog.core.Searchable;
 
-public class FoodObject extends RealmObject {
+public class FoodObject extends RealmObject implements Searchable, Cloneable {
     private long NO;
     private String FOOD_NAME;
     private String FOOD_TYPE;
@@ -88,4 +90,15 @@ public class FoodObject extends RealmObject {
     }
 
 
+    // mirrajabi/search-dialog
+    @Override
+    public String getTitle() {
+        return FOOD_NAME;
+    }
+
+    @NonNull
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
 }

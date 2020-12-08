@@ -1,5 +1,7 @@
 package com.example.anchovyfeeder;
 
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,19 +13,24 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkManager;
-import androidx.work.WorkRequest;
 
 import com.example.anchovyfeeder.databinding.ActivityMainBinding;
+import com.example.anchovyfeeder.foodrecommender.FoodRecommender;
+import com.example.anchovyfeeder.foodrecommender.FoodRecommenderAdapter;
+import com.example.anchovyfeeder.gallery.GalleryActivity;
 import com.example.anchovyfeeder.realmdb.DailyDataObject;
 import com.example.anchovyfeeder.realmdb.FoodObject;
+import com.example.anchovyfeeder.realmdb.PhotoObject;
 import com.example.anchovyfeeder.realmdb.utils.DateCalculator;
+import com.example.anchovyfeeder.receiver.DeviceDateChangeReceiver;
+import com.facebook.drawee.backends.pipeline.Fresco;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
@@ -36,24 +43,12 @@ import com.opencsv.CSVReader;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 import io.realm.annotations.RealmModule;
-
-/*
- * TODO [ 예정 ]
- *   날짜가 변경되면 자동으로 WorkManager 알람 다시 Request하기
- *   알람 오면 소리나 진동 같이 울리게
- *   알람 오고 미루기 누르면 알림에 보여주기
- *   누르면 바로 알람창 다시 띄우기
- *
- * TODO [ 진행중 ]
- * */
 
 public class MainActivity extends AppCompatActivity {
     MainActivity context = this;
@@ -62,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<Entry> calEntry = new ArrayList<>();
     ArrayList<Entry> weightEntry = new ArrayList<>();
     DateCalculator dateCalculator = new DateCalculator();
+    AlarmWorkRequestResetter alarm = new AlarmWorkRequestResetter(context, alarmList);
 
     @RealmModule(classes = {FoodObject.class})
     public class BundledRealmModule {
@@ -73,34 +69,71 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // init Fresco
+        Fresco.initialize(this);
+
         setContentView(R.layout.activity_main);
 
         // ViewModel Data binding
-        binding = DataBindingUtil.setContentView(context, R.layout.activity_main);
         final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
+        binding = DataBindingUtil.setContentView(context, R.layout.activity_main);
         binding.setViewModel(viewModel);
         binding.setLifecycleOwner(context);
-        // Alarm List Observer
-        viewModel.alarmList.observe(this, alarmList -> {
-            Toast.makeText(context, "알람 재설정", Toast.LENGTH_SHORT).show();
-            this.alarmList = alarmList;
-            resetAlarm();
-            saveAlarmListInRealm();
-        });
         // Realm Database Initialization
         if (!initRealm())
             Toast.makeText(context, "데이터베이스 로드 실패", Toast.LENGTH_SHORT).show();
+        // set Observer Viemodel, RealmResults
+        setObserver();
+        //ConvertCSVtoRealm();
+        loadFoodRealFile();
+        initComponents();
+    }
+
+    void setObserver() {
+        // Alarm List Observer
+        MainViewModel.alarmList.observe(this, alarmList -> {
+            Toast.makeText(context, "알람 재설정", Toast.LENGTH_SHORT).show();
+            this.alarmList = alarmList;
+            alarm.resetAlarm();
+            saveAlarmListInRealm();
+        });
         // Realm Database Observer
-        viewModel.DailyDatas.addChangeListener((results) -> {
+        MainViewModel.DailyDatas.addChangeListener((results) -> {
             Log.i("ViewModel.DailyDatas", "변경감지!!!!!!!! + " + results.size());
             Spinner sp = findViewById(R.id.chartTypeSpinner);
             Log.i("ViewModel.DailyDatas", "ITEM(" + sp.getSelectedItem().toString() + ")  POS(" + sp.getSelectedItemPosition());
             refreshChartEntries(sp.getSelectedItem().toString(), sp.getSelectedItemPosition());
         });
 
-        //ConvertCSVtoRealm();
-        loadFoodRealFile();
-        initComponents();
+    }
+
+    DeviceDateChangeReceiver dateReceiver = new DeviceDateChangeReceiver();
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i("MainAxtivity", "onResume()");
+
+
+        // 날짜 변경시 알람 다시 붙이는 리시버 시작
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_DATE_CHANGED);
+        dateReceiver.setAlarmList(alarmList);
+        registerReceiver(dateReceiver, intentFilter);
+        Log.i("ACTION_DATE_CHANGED", "리시버 설정");
+
+
+        // 포그라운드 서비스 시작
+        Intent intent = new Intent(context, MainForegroundService.class);
+        ContextCompat.startForegroundService(context, intent);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i("MainAxtivity", "onResume()");
+
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(dateReceiver);
     }
 
     private boolean initRealm() {
@@ -110,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
             Realm.setDefaultConfiguration(myRealmConfig);
             myRealm = Realm.getDefaultInstance();
             loadAlarmListInRealm();
-            //loadWeightsInRealm();
+            loadPhotosInRealm();
             loadUserDatasInRealm();
             return true;
         } catch (Exception e) {
@@ -132,40 +165,35 @@ public class MainActivity extends AppCompatActivity {
     public void ConvertCSVtoRealm() {
         final Realm mRealm = Realm.getDefaultInstance();
         mRealm.executeTransaction(
-                new Realm.Transaction() {
-                    @Override
-                    public void execute(Realm realm) {
-                        int count = 0;
-                        try {
-                            InputStreamReader is = new InputStreamReader(getResources().openRawResource(R.raw.list1));
-                            BufferedReader reader = new BufferedReader(is);
-                            CSVReader read = new CSVReader(reader);
-                            String[] record = null;
-                            while ((record = read.readNext()) != null) {
-                                if (count++ == 0) continue;
-                                //Log.d("RECORD:::::: ", record[0]);
-                                FoodObject fo = realm.createObject(FoodObject.class);
-                                fo.setNO(Long.valueOf(record[0]));
-                                fo.setFOOD_NAME(record[1]);
-                                fo.setFOOD_TYPE(record[2]);
-                                fo.setAMOUNT_PER_SERVINGS(Double.valueOf(record[3]));
-                                fo.setUNIT(record[4]);
-                                fo.setKCAL(Double.valueOf(record[5]));
-                                fo.setPROTEIN(Double.valueOf(record[6]));
-                                fo.setFAT(Double.valueOf(record[7]));
-                                fo.setCARBOHYDRATE(Double.valueOf(record[7]));
-                                mRealm.insert(fo);
-                                count++;
-                            }
-                        } catch (Exception e) {
-                            Log.d("ERROR:: ", count + ":" + e.getMessage());
+                realm -> {
+                    int count = 0;
+                    try {
+                        InputStreamReader is = new InputStreamReader(getResources().openRawResource(R.raw.list1));
+                        BufferedReader reader = new BufferedReader(is);
+                        CSVReader read = new CSVReader(reader);
+                        String[] record = null;
+                        while ((record = read.readNext()) != null) {
+                            if (count++ == 0) continue;
+                            //Log.d("RECORD:::::: ", record[0]);
+                            FoodObject fo = realm.createObject(FoodObject.class);
+                            fo.setNO(Long.valueOf(record[0]));
+                            fo.setFOOD_NAME(record[1]);
+                            fo.setFOOD_TYPE(record[2]);
+                            fo.setAMOUNT_PER_SERVINGS(Double.valueOf(record[3]));
+                            fo.setUNIT(record[4]);
+                            fo.setKCAL(Double.valueOf(record[5]));
+                            fo.setPROTEIN(Double.valueOf(record[6]));
+                            fo.setFAT(Double.valueOf(record[7]));
+                            fo.setCARBOHYDRATE(Double.valueOf(record[7]));
+                            mRealm.insert(fo);
+                            count++;
                         }
+                    } catch (Exception e) {
+                        Log.d("ERROR:: ", count + ":" + e.getMessage());
                     }
                 }
         );
-
-
-        TextView tv = (TextView) findViewById(R.id.textarea);
+        /*TextView tv = (TextView) findViewById(R.id.textarea);
         tv.append("Realm 테스트\n");
         FoodObject fo = mRealm.where(FoodObject.class).equalTo("NO", 3).findFirst();
         if (fo != null) {
@@ -173,8 +201,7 @@ public class MainActivity extends AppCompatActivity {
             tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
         } else {
             tv.append("NULL");
-        }
-
+        }*/
     }
 
     public void loadFoodRealFile() {
@@ -186,18 +213,22 @@ public class MainActivity extends AppCompatActivity {
 
         Realm mRealm = Realm.getInstance(config);
 
-        TextView tv = (TextView) findViewById(R.id.textarea);
-        tv.append("Realm 테스트\n");
-        MainViewModel.foodsRealm = mRealm.where(FoodObject.class).findAll();
-        FoodObject fo = MainViewModel.foodsRealm.where().like("FOOD_NAME", "ㄱ*").findFirst();
-        //FoodObject fo = MainViewModel.foodsRealm.where().contains("FOOD_NAME", "홍차").findFirst();
-        if (fo != null) {
-            //vo2.deleteFromRealm();
+       /* TextView tv = (TextView) findViewById(R.id.textarea);
+        tv.append("Realm 테스트\n");*/
+        RealmResults<FoodObject> results = mRealm.where(FoodObject.class).findAll();
+        MainViewModel.Foods = results;
+        ArrayList<FoodObject> foods = new ArrayList<>();
+        if (!results.isEmpty())
+            foods.addAll(mRealm.copyFromRealm(results));
+        MainViewModel.foodList = foods;
+        android.util.Log.i("loadFoodRealFile()", "음식 목록" + foods.size() + "개 로드");
+    }
 
-            tv.append("NO : " + fo.getNO() + "\tFOOD_NAME : " + fo.getFOOD_NAME());
-        } else {
-            tv.append("NULL");
-        }
+    private void loadPhotosInRealm() {
+        myRealm.executeTransaction(_realm -> {
+            MainViewModel.Photos = _realm.where(PhotoObject.class).findAll();
+        });
+        android.util.Log.i("loadPhotosInRealm()", "사진 " + MainViewModel.Photos.size() + "개 로드");
     }
 
     /**
@@ -228,27 +259,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Realm 데이터베이스에 있는 WeightObject를 전부 불러온 후 ViewModel에 바인드한다.
+     * Realm 데이터베이스에 있는 유저 데이터를 전부 불러온 후 ViewModel에 설정한다.
      */
-   /* private void loadWeightsInRealm() {
-        myRealm.executeTransaction(_realm -> {
-            MainViewModel.weightsThisMonth = _realm.where(WeightObject.class)
-                    .findAll();
-        });
-    }*/
     private void loadUserDatasInRealm() {
         myRealm.executeTransaction(_realm -> {
-            MainViewModel.DailyDatas = _realm.where(DailyDataObject.class)
-                    .findAll();
+            MainViewModel.DailyDatas = _realm.where(DailyDataObject.class).findAll();
         });
     }
-
 
     public void initComponents() {
         // AlarmList CardView
         {
             MainViewModel.setAlarmList(alarmList);
-
             RecyclerView AlarmList = findViewById(R.id.AlarmList);
 
             // 리사이클러뷰에 Adapter 객체 지정.
@@ -267,6 +289,17 @@ public class MainActivity extends AppCompatActivity {
                 aldial.show();
             });
         }
+        // Food Recommender CardView
+        {
+            FoodRecommender foodRecommender = new FoodRecommender();
+            ArrayList<FoodObject> foods = foodRecommender.getRecommendedFood();
+            RecyclerView foodRecommenderLits = findViewById(R.id.FoodRecommenderLits);
+            foodRecommenderLits.setLayoutManager(
+                    new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+            FoodRecommenderAdapter foodAdapter = new FoodRecommenderAdapter(foods);
+            foodRecommenderLits.setAdapter(foodAdapter);
+        }
+
 
         // Chart CardView
         {
@@ -284,60 +317,50 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
-            //그래프에 들어갈 좌표값 입력
-            calEntry.add(new Entry(1, 2000));
-            calEntry.add(new Entry(2, 3200));
-            calEntry.add(new Entry(3, 2100));
-            calEntry.add(new Entry(6, 2500));
-
-            weightEntry.add(new Entry(1, 57f));
-            weightEntry.add(new Entry(2, 58f));
-            weightEntry.add(new Entry(5, 60f));
-            weightEntry.add(new Entry(7, 61.2f));
+            //그래프에 들어갈 임시값 입력
+            calEntry.add(new Entry(0, 2700));
+            weightEntry.add(new Entry(0, 50f));
             initChart();
             setChartData();
-
-
         }
-
         setEvent();
     }
 
-    private void resetAlarm() {
-        WorkManager workManager = WorkManager.getInstance(context);
-        workManager.cancelAllWork();
-        Calendar nowCalendar = Calendar.getInstance();
-        nowCalendar.setTime(new Date(System.currentTimeMillis()));
-        int nowHour = nowCalendar.get(Calendar.HOUR_OF_DAY);
-        int nowMinute = nowCalendar.get(Calendar.MINUTE);
-        int nowSecond = nowCalendar.get(Calendar.SECOND);
-        int delaySecond = 0;
+    /* private void resetAlarm() {
+         WorkManager workManager = WorkManager.getInstance(context);
+         workManager.cancelAllWork();
+         Calendar nowCalendar = Calendar.getInstance();
+         nowCalendar.setTime(new Date(System.currentTimeMillis()));
+         int nowHour = nowCalendar.get(Calendar.HOUR_OF_DAY);
+         int nowMinute = nowCalendar.get(Calendar.MINUTE);
+         int nowSecond = nowCalendar.get(Calendar.SECOND);
+         int delaySecond = 0;
 
-        for (AlarmListItem item : alarmList) {
-            // 현재 시간 이전에 있는 아이템은 큐에 추가 안함
-            //android.util.Log.i("WorkManager Request", nowHour + "<->" + item.getHour());
-            //android.util.Log.i("WorkManager Request", nowMinute + "<->" + item.getMinute());
-            if (item.getHour() < nowHour) {
-                // 알람 시간이 현재시간보다 작으면 무조건 건너뀜
-                //android.util.Log.i("WorkManager Request", "Skip1");
-                continue;
-            } else if ((item.getHour() == nowHour) && (item.getMinute() <= nowMinute)) {
-                // 알람 시각이 현재 시각과 같고, 알람 분이 현재 분보다 작거나 같을 때 건너뜀
-                //android.util.Log.i("WorkManager Request", "Skip2");
-                continue;
-            }
-            delaySecond = (item.getHour() - nowHour) * 60 * 60 + (item.getMinute() - nowMinute) * 60 - nowSecond;
-            // Request 생성
-            WorkRequest dealyWorkRequest = new OneTimeWorkRequest.Builder(AlarmWorker.class)
-                    .setInitialDelay(delaySecond, TimeUnit.SECONDS)
-                    .addTag(item.getName())
-                    .build();
-            // WorkManager 큐에 추가
-            workManager.enqueue(dealyWorkRequest);
-            android.util.Log.i("WorkManager Request", "Delay(" + delaySecond + "초), Tag(" + item.getName() + ") ");
-        }
-    }
-
+         for (AlarmListItem item : alarmList) {
+             // 현재 시간 이전에 있는 아이템은 큐에 추가 안함
+             //android.util.Log.i("WorkManager Request", nowHour + "<->" + item.getHour());
+             //android.util.Log.i("WorkManager Request", nowMinute + "<->" + item.getMinute());
+             if (item.getHour() < nowHour) {
+                 // 알람 시간이 현재시간보다 작으면 무조건 건너뀜
+                 //android.util.Log.i("WorkManager Request", "Skip1");
+                 continue;
+             } else if ((item.getHour() == nowHour) && (item.getMinute() <= nowMinute)) {
+                 // 알람 시각이 현재 시각과 같고, 알람 분이 현재 분보다 작거나 같을 때 건너뜀
+                 //android.util.Log.i("WorkManager Request", "Skip2");
+                 continue;
+             }
+             delaySecond = (item.getHour() - nowHour) * 60 * 60 + (item.getMinute() - nowMinute) * 60 - nowSecond;
+             // Request 생성
+             WorkRequest dealyWorkRequest = new OneTimeWorkRequest.Builder(AlarmWorker.class)
+                     .setInitialDelay(delaySecond, TimeUnit.SECONDS)
+                     .addTag(item.getName())
+                     .build();
+             // WorkManager 큐에 추가
+             workManager.enqueue(dealyWorkRequest);
+             android.util.Log.i("WorkManager Request", "Delay(" + delaySecond + "초), Tag(" + item.getName() + ") ");
+         }
+     }
+ */
     private void setEvent() {
         final MainViewModel viewModel = new ViewModelProvider(context).get(MainViewModel.class);
 
@@ -348,9 +371,13 @@ public class MainActivity extends AppCompatActivity {
         });
         // 몸무게 추가 버튼
         findViewById(R.id.addWeights).setOnClickListener(view -> {
-            //Toast.makeText(getApplicationContext(), "구현중", Toast.LENGTH_SHORT).show();
             WeightAdderDialog dial = new WeightAdderDialog(view.getContext());
             dial.show();
+        });
+        // 갤러리 열기 버튼
+        findViewById(R.id.open_gallery).setOnClickListener(view -> {
+            Intent intent = new Intent(this, GalleryActivity.class);
+            startActivity(intent);
         });
     }
 
@@ -389,8 +416,10 @@ public class MainActivity extends AppCompatActivity {
         xAxis.setTextSize(11);
         xAxis.setTextColor(Color.BLACK);
         xAxis.setGranularity(1f);
+
         xAxis.setGranularityEnabled(true);
-        xAxis.setAxisMinimum(1f);
+        //xAxis.setAxisMinimum(1f);
+        xAxis.setAxisMinimum(-0.4f);
         xAxis.setAxisMaximum(32f);
         xAxis.setDrawGridLines(true);
         xAxis.setDrawAxisLine(false);
@@ -435,17 +464,18 @@ public class MainActivity extends AppCompatActivity {
             leftYAxis.removeAllLimitLines();
             LimitLine ll = new LimitLine(2000f, "성인 여성 일일 권장 칼로리");
             ll.setLineColor(Color.RED);
-            ll.setLineWidth(4f);
+            ll.setLineWidth(1.5f);
+            ll.enableDashedLine(3.5f, 2f, 1);
             ll.setTextColor(Color.BLACK);
             ll.setTextSize(12f);
             leftYAxis.addLimitLine(ll);
             LimitLine ll_man = new LimitLine(2700f, "성인 남성 일일 권장 칼로리");
-            ll.setLineColor(Color.RED);
-            ll.setLineWidth(4f);
-            ll.setTextColor(Color.BLACK);
-            ll.setTextSize(12f);
+            ll_man.setLineColor(Color.RED);
+            ll_man.setLineWidth(1.5f);
+            ll_man.enableDashedLine(3.5f, 2f, 1);
+            ll_man.setTextColor(Color.BLACK);
+            ll_man.setTextSize(12f);
             leftYAxis.addLimitLine(ll_man);
-            leftYAxis.removeAllLimitLines();
 
             Date[] dates = dateCalculator.getFirstAndLastDayOfMonth();
             fomatter.setUnit("일");
@@ -460,7 +490,7 @@ public class MainActivity extends AppCompatActivity {
                 if (item.getCalorieSum() > 0.0)
                     calorieList.add(item.getCalorieEntry());
             }
-            android.util.Log.i("chartTypeSpinner", "Array " + weightList);
+            android.util.Log.i("chartTypeSpinner", "Array Size: " + weightList.size() + " and " + calorieList.size());
 
         } else if ("주별".equals(selectedType)) {
             // 왼쪽 세로축 제한선
@@ -504,12 +534,12 @@ public class MainActivity extends AppCompatActivity {
             float lastEntryX = weightLastEntry.getX();
             last = (lastEntryX > last) ? lastEntryX : last;
         }
-        if(!calorieList.isEmpty()) {
+        if (!calorieList.isEmpty()) {
             Entry caloriesLastEntry = calorieList.get(calorieList.size() - 1);
             float lastEntryX = caloriesLastEntry.getX();
             last = (lastEntryX > last) ? lastEntryX : last;
         }
-        xAxis.setAxisMaximum(last);
+        xAxis.setAxisMaximum(last + 0.4f);
 
         TextView chartDescTextView = findViewById(R.id.chartDesc);
         chartDescTextView.setText(descs[pos]);
@@ -524,7 +554,7 @@ public class MainActivity extends AppCompatActivity {
         LineChart chart = findViewById(R.id.chart);
         LineDataSet calSet, weightSet;
 
-        if (chart.getData() != null &&
+        /*if (chart.getData() != null &&
                 chart.getData().getDataSetCount() > 0) {
 
             calSet = (LineDataSet) chart.getData().getDataSetByIndex(0);
@@ -537,56 +567,56 @@ public class MainActivity extends AppCompatActivity {
             weightSet.notifyDataSetChanged();
             chart.notifyDataSetChanged();
 
-        } else {
-            calSet = new LineDataSet(calEntry, "칼로리");
-            calSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-            calSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-            MyValueFormatter calorieFormatter = new MyValueFormatter();
-            calorieFormatter.setUnit("Kcal");
-            calSet.setValueFormatter(calorieFormatter);
-            calSet.setCubicIntensity(0.2f);
-            calSet.setDrawFilled(true);
-            calSet.setDrawCircles(false);
-            calSet.setLineWidth(1.8f);
-            calSet.setCircleRadius(4f);
-            calSet.setValueTextSize(10f);
-            calSet.setCircleColor(R.color.colorLine1Pressed);
-            calSet.setHighLightColor(Color.rgb(244, 117, 117));
-            calSet.setColor(getColor(R.color.colorLine1));
-            calSet.setFillColor(getColor(R.color.colorLine1));
-            calSet.setFillAlpha(200);
-            calSet.setDrawHorizontalHighlightIndicator(false);
-            calSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
+        } else {*/
+        calSet = new LineDataSet(calEntry, "칼로리");
+        calSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        calSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        MyValueFormatter calorieFormatter = new MyValueFormatter();
+        calorieFormatter.setUnit("Kcal");
+        calSet.setValueFormatter(calorieFormatter);
+        calSet.setCubicIntensity(0.2f);
+        calSet.setDrawFilled(true);
+        calSet.setDrawCircles(false);
+        calSet.setLineWidth(1.8f);
+        calSet.setCircleRadius(4f);
+        calSet.setValueTextSize(10f);
+        calSet.setCircleColor(R.color.colorLine1Pressed);
+        calSet.setHighLightColor(Color.rgb(244, 117, 117));
+        calSet.setColor(getColor(R.color.colorLine1));
+        calSet.setFillColor(getColor(R.color.colorLine1));
+        calSet.setFillAlpha(200);
+        calSet.setDrawHorizontalHighlightIndicator(false);
+        calSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
 
-            weightSet = new LineDataSet(weightEntry, "몸무게");
-            weightSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
-            weightSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
-            MyValueFormatter weightFormatter = new MyValueFormatter();
-            weightFormatter.setUnit("Kg");
-            weightSet.setValueFormatter(weightFormatter);
-            weightSet.setCubicIntensity(0.2f);
-            weightSet.setDrawFilled(false);
-            weightSet.setDrawCircles(true);
-            weightSet.setLineWidth(1.8f);
-            weightSet.setValueTextSize(10f);
-            weightSet.setCircleRadius(4f);
-            weightSet.setCircleColor(R.color.colorLine2Pressed);
-            weightSet.setHighLightColor(Color.rgb(244, 117, 117));
-            weightSet.setColor(getColor(R.color.colorLine2));
-            weightSet.setFillColor(getColor(R.color.colorLine2));
-            weightSet.setFillAlpha(0);
-            weightSet.setDrawHorizontalHighlightIndicator(false);
-            weightSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
+        weightSet = new LineDataSet(weightEntry, "몸무게");
+        weightSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
+        weightSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
+        MyValueFormatter weightFormatter = new MyValueFormatter();
+        weightFormatter.setUnit("Kg");
+        weightSet.setValueFormatter(weightFormatter);
+        weightSet.setCubicIntensity(0.2f);
+        weightSet.setDrawFilled(false);
+        weightSet.setDrawCircles(true);
+        weightSet.setLineWidth(1.8f);
+        weightSet.setValueTextSize(10f);
+        weightSet.setCircleRadius(4f);
+        weightSet.setCircleColor(R.color.colorLine2Pressed);
+        weightSet.setHighLightColor(Color.rgb(244, 117, 117));
+        weightSet.setColor(getColor(R.color.colorLine2));
+        weightSet.setFillColor(getColor(R.color.colorLine2));
+        weightSet.setFillAlpha(0);
+        weightSet.setDrawHorizontalHighlightIndicator(false);
+        weightSet.setFillFormatter((dataSet, dataProvider) -> chart.getAxisLeft().getAxisMinimum());
 
-            // create a data object with the data sets
-            LineData chartData = new LineData();
-            chartData.addDataSet(calSet);
-            chartData.addDataSet(weightSet);
-            chartData.setDrawValues(true);
+        // create a data object with the data sets
+        LineData chartData = new LineData();
+        chartData.addDataSet(calSet);
+        chartData.addDataSet(weightSet);
+        chartData.setDrawValues(true);
 
-            // set data
-            chart.setData(chartData);
-        }
+        // set data
+        chart.setData(chartData);
+        //}
         chart.fitScreen();
         chart.setVisibleXRangeMaximum(7f);
         chart.moveViewToX(chart.getXRange());
